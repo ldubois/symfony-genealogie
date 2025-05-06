@@ -5,6 +5,14 @@ namespace App\Entity;
 use App\Repository\PersonRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
+
+enum Gender: string
+{
+    case MALE = 'homme';
+    case FEMALE = 'femme';
+}
 
 #[ORM\Entity(repositoryClass: PersonRepository::class)]
 class Person
@@ -45,6 +53,24 @@ class Person
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $photo = null;
+
+    #[ORM\Column(type: 'string', enumType: Gender::class, nullable: true)]
+    private ?Gender $gender = null;
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $generation = null;
+
+    #[ORM\OneToMany(mappedBy: 'father', targetEntity: Person::class)]
+    private Collection $childrenAsFather;
+
+    #[ORM\OneToMany(mappedBy: 'mother', targetEntity: Person::class)]
+    private Collection $childrenAsMother;
+
+    public function __construct()
+    {
+        $this->childrenAsFather = new ArrayCollection();
+        $this->childrenAsMother = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -161,8 +187,40 @@ class Person
         return $this;
     }
 
+    public function getGender(): ?Gender
+    {
+        return $this->gender;
+    }
+
+    public function setGender(?Gender $gender): static
+    {
+        $this->gender = $gender;
+        return $this;
+    }
+
+    public function getGeneration(): ?int
+    {
+        return $this->generation;
+    }
+
+    public function setGeneration(?int $generation): static
+    {
+        $this->generation = $generation;
+        return $this;
+    }
+
     public function getFullName(): string
     {
         return $this->firstName . ' ' . $this->lastName;
+    }
+
+    public function getChildren(): Collection
+    {
+        return new ArrayCollection(
+            array_merge(
+                $this->childrenAsFather->toArray(),
+                $this->childrenAsMother->toArray()
+            )
+        );
     }
 }

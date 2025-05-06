@@ -23,3 +23,12 @@
 /public/assets/
 /assets/vendor/
 ###< symfony/asset-mapper ###
+
+###> DATABASE ###
+/var/data/
+/var/db/
+/var/db/sqlite/
+/var/db/mysql/
+/var/db/postgresql/
+/database/
+###< DATABASE ###

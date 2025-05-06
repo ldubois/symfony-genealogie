@@ -8,8 +8,11 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use App\Entity\Gender;
+use App\Repository\PersonRepository;
 
 class PersonType extends AbstractType
 {
@@ -23,6 +26,15 @@ class PersonType extends AbstractType
             ->add('lastName', TextType::class, [
                 'label' => 'Nom',
                 'attr' => ['placeholder' => 'Entrez le nom']
+            ])
+            ->add('gender', ChoiceType::class, [
+                'label' => 'Sexe',
+                'choices' => [
+                    'Homme' => Gender::MALE,
+                    'Femme' => Gender::FEMALE
+                ],
+                'placeholder' => 'Sélectionnez le sexe',
+                'required' => false
             ])
             ->add('birthDate', DateType::class, [
                 'label' => 'Date de naissance',
@@ -57,14 +69,28 @@ class PersonType extends AbstractType
                 'choice_label' => 'fullName',
                 'label' => 'Père',
                 'required' => false,
-                'placeholder' => 'Sélectionnez le père'
+                'placeholder' => 'Sélectionnez le père',
+                'query_builder' => function (PersonRepository $er) {
+                    return $er->createQueryBuilder('p')
+                        ->where('p.gender = :gender')
+                        ->setParameter('gender', Gender::MALE)
+                        ->orderBy('p.lastName', 'ASC')
+                        ->addOrderBy('p.firstName', 'ASC');
+                }
             ])
             ->add('mother', EntityType::class, [
                 'class' => Person::class,
                 'choice_label' => 'fullName',
                 'label' => 'Mère',
                 'required' => false,
-                'placeholder' => 'Sélectionnez la mère'
+                'placeholder' => 'Sélectionnez la mère',
+                'query_builder' => function (PersonRepository $er) {
+                    return $er->createQueryBuilder('p')
+                        ->where('p.gender = :gender')
+                        ->setParameter('gender', Gender::FEMALE)
+                        ->orderBy('p.lastName', 'ASC')
+                        ->addOrderBy('p.firstName', 'ASC');
+                }
             ])
             ->add('photo', TextType::class, [
                 'label' => 'Photo',

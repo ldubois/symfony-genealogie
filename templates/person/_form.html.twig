@@ -1,54 +1,133 @@
+{% form_theme form 'form/bootstrap_5_layout.html.twig' %}
+
 {{ form_start(form, {'attr': {'class': 'needs-validation'}}) }}
-    <div class="row">
-        <div class="col-md-6">
-            {{ form_row(form.firstName) }}
-        </div>
-        <div class="col-md-6">
-            {{ form_row(form.lastName) }}
-        </div>
-    </div>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title mb-4">Informations personnelles</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form_row(form.firstName, {
+                        'attr': {
+                            'class': 'form-control',
+                            'placeholder': 'Entrez le prénom'
+                        },
+                        'label': 'Prénom'
+                    }) }}
+                </div>
+                <div class="col-md-6">
+                    {{ form_row(form.lastName, {
+                        'attr': {
+                            'class': 'form-control',
+                            'placeholder': 'Entrez le nom'
+                        },
+                        'label': 'Nom'
+                    }) }}
+                </div>
+                <div class="col-md-6">
+                    {{ form_row(form.gender, {
+                        'label': 'Sexe',
+                        'attr': {
+                            'class': 'form-select'
+                        },
+                        'placeholder': 'Sélectionnez le sexe'
+                    }) }}
+                </div>
+            </div>
 
-    <div class="row">
-        <div class="col-md-6">
-            {{ form_row(form.birthDate) }}
-        </div>
-        <div class="col-md-6">
-            {{ form_row(form.birthPlace) }}
-        </div>
-    </div>
+            <h5 class="card-title mb-4 mt-4">Dates et lieux</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form_row(form.birthDate, {
+                        'label': 'Date de naissance',
+                        'help': 'Format : JJ/MM/AAAA'
+                    }) }}
+                </div>
+                <div class="col-md-6">
+                    {{ form_row(form.birthPlace, {
+                        'attr': {
+                            'class': 'form-control',
+                            'placeholder': 'Entrez le lieu de naissance'
+                        },
+                        'label': 'Lieu de naissance'
+                    }) }}
+                </div>
+            </div>
 
-    <div class="row">
-        <div class="col-md-6">
-            {{ form_row(form.deathDate) }}
-        </div>
-        <div class="col-md-6">
-            {{ form_row(form.deathPlace) }}
-        </div>
-    </div>
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form_row(form.deathDate, {
+                        'label': 'Date de décès',
+                        'help': 'Format : JJ/MM/AAAA'
+                    }) }}
+                </div>
+                <div class="col-md-6">
+                    {{ form_row(form.deathPlace, {
+                        'attr': {
+                            'class': 'form-control',
+                            'placeholder': 'Entrez le lieu de décès'
+                        },
+                        'label': 'Lieu de décès'
+                    }) }}
+                </div>
+            </div>
 
-    <div class="row">
-        <div class="col-md-6">
-            {{ form_row(form.father) }}
-        </div>
-        <div class="col-md-6">
-            {{ form_row(form.mother) }}
-        </div>
-    </div>
+            <h5 class="card-title mb-4 mt-4">Relations familiales</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form_row(form.father, {
+                        'label': 'Père',
+                        'attr': {
+                            'class': 'form-select'
+                        }
+                    }) }}
+                </div>
+                <div class="col-md-6">
+                    {{ form_row(form.mother, {
+                        'label': 'Mère',
+                        'attr': {
+                            'class': 'form-select'
+                        }
+                    }) }}
+                </div>
+            </div>
 
-    <div class="row">
-        <div class="col-12">
-            {{ form_row(form.biography) }}
-        </div>
-    </div>
+            <h5 class="card-title mb-4 mt-4">Informations complémentaires</h5>
+            <div class="row">
+                <div class="col-12">
+                    {{ form_row(form.biography, {
+                        'attr': {
+                            'class': 'form-control',
+                            'placeholder': 'Entrez la biographie',
+                            'rows': 5
+                        },
+                        'label': 'Biographie'
+                    }) }}
+                </div>
+            </div>
 
-    <div class="row">
-        <div class="col-12">
-            {{ form_row(form.photo) }}
+            <div class="row">
+                <div class="col-12">
+                    {{ form_row(form.photo, {
+                        'attr': {
+                            'class': 'form-control',
+                            'placeholder': 'Entrez l\'URL de la photo'
+                        },
+                        'label': 'Photo (URL)',
+                        'help': 'Entrez l\'URL d\'une image en ligne'
+                    }) }}
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div class="mt-4">
-        <button class="btn btn-primary">{{ button_label|default('Enregistrer') }}</button>
-        <a href="{{ path('app_person_index') }}" class="btn btn-secondary">Retour à la liste</a>
+        <div class="card-footer bg-transparent">
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="{{ path('app_person_index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Retour à la liste
+                </a>
+                <button class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i> {{ button_label|default('Enregistrer') }}
+                </button>
+            </div>
+        </div>
     </div>
 {{ form_end(form) }} 

@@ -6,15 +6,15 @@ Ce projet est une application web développée avec le framework Symfony.
 ## Prérequis
 - PHP 8.1 ou supérieur
 - Composer
-- MySQL 5.7 ou supérieur
+- MySQL ou SQLite
 - Node.js et npm (pour les assets)
 
 ## Installation
 
 1. Cloner le repository
 ```bash
-git clone [URL_DU_REPO]
-cd [NOM_DU_PROJET]
+git clone https://github.com/ldubois/symfony-genealogie.git
+cd symfony-genealogie
 ```
 
 2. Installer les dépendances PHP
@@ -102,7 +102,5 @@ php bin/phpunit
 Ce projet est sous licence [MIT](LICENSE).
 
 ## Contact
+DUBOIS Ludovic - [Linkedin](https://www.linkedin.com/in/ludovic-dubois-profil/)
 
-Votre Nom - [@votre_twitter](https://twitter.com/votre_twitter) - email@example.com
-
-Lien du projet : [https://github.com/votre_username/votre_repo](https://github.com/votre_username/votre_repo)

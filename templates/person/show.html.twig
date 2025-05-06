@@ -1,0 +1,133 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ person.fullName }}{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ person.fullName }}</h1>
+        <div class="btn-group">
+            <a href="{{ path('app_person_edit', {'id': person.id}) }}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+            <a href="{{ path('app_person_tree', {'id': person.id}) }}" class="btn btn-success">
+                <i class="fas fa-sitemap"></i> Voir l'arbre
+            </a>
+            <form method="post" action="{{ path('app_person_delete', {'id': person.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette personne ?');" style="display: inline-block">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ person.id) }}">
+                <button class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Supprimer
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            {% if person.photo %}
+                <img src="{{ person.photo }}" class="img-fluid rounded mb-3" alt="{{ person.fullName }}">
+            {% endif %}
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Informations personnelles</h5>
+                    <dl class="row">
+                        {% if person.birthDate %}
+                            <dt class="col-sm-4">Date de naissance</dt>
+                            <dd class="col-sm-8">{{ person.birthDate|date('d/m/Y') }}</dd>
+                        {% endif %}
+                        
+                        {% if person.birthPlace %}
+                            <dt class="col-sm-4">Lieu de naissance</dt>
+                            <dd class="col-sm-8">{{ person.birthPlace }}</dd>
+                        {% endif %}
+                        
+                        {% if person.deathDate %}
+                            <dt class="col-sm-4">Date de décès</dt>
+                            <dd class="col-sm-8">{{ person.deathDate|date('d/m/Y') }}</dd>
+                        {% endif %}
+                        
+                        {% if person.deathPlace %}
+                            <dt class="col-sm-4">Lieu de décès</dt>
+                            <dd class="col-sm-8">{{ person.deathPlace }}</dd>
+                        {% endif %}
+                    </dl>
+
+                    {% if person.biography %}
+                        <h5 class="card-title mt-4">Biographie</h5>
+                        <p class="card-text">{{ person.biography|nl2br }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Parents</h5>
+                    {% if person.father or person.mother %}
+                        <div class="row">
+                            {% if person.father %}
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Père</h6>
+                                            <p class="card-text">{{ person.father.fullName }}</p>
+                                            <a href="{{ path('app_person_show', {'id': person.father.id}) }}" class="btn btn-sm btn-info">
+                                                Voir les détails
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            
+                            {% if person.mother %}
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Mère</h6>
+                                            <p class="card-text">{{ person.mother.fullName }}</p>
+                                            <a href="{{ path('app_person_show', {'id': person.mother.id}) }}" class="btn btn-sm btn-info">
+                                                Voir les détails
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Aucun parent enregistré</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Enfants</h5>
+                    {% if descendants|length > 0 %}
+                        <div class="row">
+                            {% for child in descendants %}
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <p class="card-text">{{ child.fullName }}</p>
+                                            <a href="{{ path('app_person_show', {'id': child.id}) }}" class="btn btn-sm btn-info">
+                                                Voir les détails
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Aucun enfant enregistré</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %} 

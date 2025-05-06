@@ -1,0 +1,154 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Arbre généalogique - {{ person.fullName }}{% endblock %}
+
+{% block stylesheets %}
+    <style>
+        .tree-container {
+            overflow-x: auto;
+            padding: 20px;
+        }
+        .tree {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .tree-level {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            position: relative;
+        }
+        .tree-node {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 0 10px;
+            background-color: #fff;
+            min-width: 200px;
+            text-align: center;
+            position: relative;
+        }
+        .tree-node.current {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+        .tree-node img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+        .tree-lines {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            right: 0;
+            height: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .tree-line {
+            width: 2px;
+            background-color: #ddd;
+            height: 100%;
+        }
+        .tree-line-horizontal {
+            position: absolute;
+            height: 2px;
+            background-color: #ddd;
+            top: -20px;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Arbre généalogique de {{ person.fullName }}</h1>
+        <a href="{{ path('app_person_show', {'id': person.id}) }}" class="btn btn-primary">
+            <i class="fas fa-arrow-left"></i> Retour aux détails
+        </a>
+    </div>
+
+    <div class="tree-container">
+        <div class="tree">
+            {# Ancêtres #}
+            {% for i in 0..3 %}
+                <div class="tree-level">
+                    {% set levelAncestors = ancestors|filter(a => a.generation == i) %}
+                    {% if levelAncestors|length > 0 %}
+                        {% for ancestor in levelAncestors %}
+                            <div class="tree-node">
+                                {% if ancestor.photo %}
+                                    <img src="{{ ancestor.photo }}" alt="{{ ancestor.fullName }}">
+                                {% endif %}
+                                <h5>{{ ancestor.fullName }}</h5>
+                                {% if ancestor.birthDate %}
+                                    <p class="text-muted">
+                                        {{ ancestor.birthDate|date('d/m/Y') }}
+                                        {% if ancestor.deathDate %}
+                                            - {{ ancestor.deathDate|date('d/m/Y') }}
+                                        {% endif %}
+                                    </p>
+                                {% endif %}
+                                <a href="{{ path('app_person_show', {'id': ancestor.id}) }}" class="btn btn-sm btn-info">
+                                    Voir les détails
+                                </a>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            {# Personne actuelle #}
+            <div class="tree-level">
+                <div class="tree-node current">
+                    {% if person.photo %}
+                        <img src="{{ person.photo }}" alt="{{ person.fullName }}">
+                    {% endif %}
+                    <h5>{{ person.fullName }}</h5>
+                    {% if person.birthDate %}
+                        <p class="text-muted">
+                            {{ person.birthDate|date('d/m/Y') }}
+                            {% if person.deathDate %}
+                                - {{ person.deathDate|date('d/m/Y') }}
+                            {% endif %}
+                        </p>
+                    {% endif %}
+                    <a href="{{ path('app_person_show', {'id': person.id}) }}" class="btn btn-sm btn-info">
+                        Voir les détails
+                    </a>
+                </div>
+            </div>
+
+            {# Descendants #}
+            {% for i in 0..3 %}
+                <div class="tree-level">
+                    {% set levelDescendants = descendants|filter(d => d.generation == i) %}
+                    {% if levelDescendants|length > 0 %}
+                        {% for descendant in levelDescendants %}
+                            <div class="tree-node">
+                                {% if descendant.photo %}
+                                    <img src="{{ descendant.photo }}" alt="{{ descendant.fullName }}">
+                                {% endif %}
+                                <h5>{{ descendant.fullName }}</h5>
+                                {% if descendant.birthDate %}
+                                    <p class="text-muted">
+                                        {{ descendant.birthDate|date('d/m/Y') }}
+                                        {% if descendant.deathDate %}
+                                            - {{ descendant.deathDate|date('d/m/Y') }}
+                                        {% endif %}
+                                    </p>
+                                {% endif %}
+                                <a href="{{ path('app_person_show', {'id': descendant.id}) }}" class="btn btn-sm btn-info">
+                                    Voir les détails
+                                </a>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %} 

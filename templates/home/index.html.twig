@@ -1,0 +1,142 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Accueil - Généalogie{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .hero-section {
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 100px 0;
+            margin-bottom: 50px;
+        }
+        .feature-card {
+            transition: transform 0.3s;
+            height: 100%;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="hero-section text-center">
+        <div class="container">
+            <h1 class="display-4 mb-4">Bienvenue dans votre Arbre Généalogique</h1>
+            <p class="lead mb-4">Explorez, découvrez et partagez l'histoire de votre famille</p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{{ path('app_person_new') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus"></i> Ajouter une personne
+                </a>
+                <a href="{{ path('app_person_index') }}" class="btn btn-outline-light btn-lg">
+                    <i class="fas fa-users"></i> Voir la liste
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row mb-5">
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-number">{{ total_people }}</div>
+                    <div class="stat-label">Personnes enregistrées</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-number">{{ latest_people|length }}</div>
+                    <div class="stat-label">Nouvelles entrées</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-number">4</div>
+                    <div class="stat-label">Générations visibles</div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="mb-4">Dernières personnes ajoutées</h2>
+        <div class="row">
+            {% for person in latest_people %}
+                <div class="col-md-4 mb-4">
+                    <div class="card feature-card">
+                        {% if person.photo %}
+                            <img src="{{ person.photo }}" class="card-img-top" alt="{{ person.fullName }}" style="height: 200px; object-fit: cover;">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ person.fullName }}</h5>
+                            {% if person.birthDate %}
+                                <p class="card-text">
+                                    <small class="text-muted">
+                                        Né(e) le {{ person.birthDate|date('d/m/Y') }}
+                                        {% if person.birthPlace %}
+                                            à {{ person.birthPlace }}
+                                        {% endif %}
+                                    </small>
+                                </p>
+                            {% endif %}
+                            <a href="{{ path('app_person_show', {'id': person.id}) }}" class="btn btn-primary">
+                                Voir les détails
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        Aucune personne n'a encore été ajoutée. 
+                        <a href="{{ path('app_person_new') }}" class="alert-link">Commencez à ajouter des personnes</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="row mt-5">
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-sitemap fa-3x mb-3 text-primary"></i>
+                        <h5 class="card-title">Arbre Généalogique</h5>
+                        <p class="card-text">Visualisez votre arbre généalogique sur plusieurs générations et naviguez facilement entre les membres de votre famille.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-history fa-3x mb-3 text-primary"></i>
+                        <h5 class="card-title">Histoire Familiale</h5>
+                        <p class="card-text">Conservez et partagez l'histoire de votre famille avec des biographies détaillées et des photos.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-share-alt fa-3x mb-3 text-primary"></i>
+                        <h5 class="card-title">Partage Facile</h5>
+                        <p class="card-text">Partagez facilement votre arbre généalogique avec votre famille et vos proches.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %} 

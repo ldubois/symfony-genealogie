@@ -1,0 +1,52 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liste des personnes{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Liste des personnes</h1>
+        <a href="{{ path('app_person_new') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouvelle personne
+        </a>
+    </div>
+
+    <div class="row">
+        {% for person in people %}
+            <div class="col-md-4 mb-4">
+                <div class="card person-card h-100">
+                    {% if person.photo %}
+                        <img src="{{ person.photo }}" class="card-img-top" alt="{{ person.fullName }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ person.fullName }}</h5>
+                        <p class="card-text">
+                            {% if person.birthDate %}
+                                <strong>Né(e) le:</strong> {{ person.birthDate|date('d/m/Y') }}<br>
+                            {% endif %}
+                            {% if person.birthPlace %}
+                                <strong>à:</strong> {{ person.birthPlace }}<br>
+                            {% endif %}
+                        </p>
+                        <div class="btn-group">
+                            <a href="{{ path('app_person_show', {'id': person.id}) }}" class="btn btn-info btn-sm">
+                                <i class="fas fa-eye"></i> Détails
+                            </a>
+                            <a href="{{ path('app_person_edit', {'id': person.id}) }}" class="btn btn-warning btn-sm">
+                                <i class="fas fa-edit"></i> Modifier
+                            </a>
+                            <a href="{{ path('app_person_tree', {'id': person.id}) }}" class="btn btn-success btn-sm">
+                                <i class="fas fa-sitemap"></i> Arbre
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    Aucune personne n'a été trouvée. <a href="{{ path('app_person_new') }}">Ajouter une personne</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %} 

@@ -1,0 +1,54 @@
+{{ form_start(form, {'attr': {'class': 'needs-validation'}}) }}
+    <div class="row">
+        <div class="col-md-6">
+            {{ form_row(form.firstName) }}
+        </div>
+        <div class="col-md-6">
+            {{ form_row(form.lastName) }}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            {{ form_row(form.birthDate) }}
+        </div>
+        <div class="col-md-6">
+            {{ form_row(form.birthPlace) }}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            {{ form_row(form.deathDate) }}
+        </div>
+        <div class="col-md-6">
+            {{ form_row(form.deathPlace) }}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            {{ form_row(form.father) }}
+        </div>
+        <div class="col-md-6">
+            {{ form_row(form.mother) }}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            {{ form_row(form.biography) }}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            {{ form_row(form.photo) }}
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <button class="btn btn-primary">{{ button_label|default('Enregistrer') }}</button>
+        <a href="{{ path('app_person_index') }}" class="btn btn-secondary">Retour à la liste</a>
+    </div>
+{{ form_end(form) }} 

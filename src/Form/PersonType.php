@@ -70,12 +70,20 @@ class PersonType extends AbstractType
                 'label' => 'Père',
                 'required' => false,
                 'placeholder' => 'Sélectionnez le père',
-                'query_builder' => function (PersonRepository $er) {
-                    return $er->createQueryBuilder('p')
+                'query_builder' => function (PersonRepository $er) use ($options) {
+                    $qb = $er->createQueryBuilder('p')
                         ->where('p.gender = :gender')
                         ->setParameter('gender', Gender::MALE)
                         ->orderBy('p.lastName', 'ASC')
                         ->addOrderBy('p.firstName', 'ASC');
+                    
+                    // Exclure la personne courante si elle existe
+                    if (isset($options['data']) && $options['data']->getId()) {
+                        $qb->andWhere('p.id != :currentId')
+                           ->setParameter('currentId', $options['data']->getId());
+                    }
+                    
+                    return $qb;
                 }
             ])
             ->add('mother', EntityType::class, [
@@ -84,12 +92,20 @@ class PersonType extends AbstractType
                 'label' => 'Mère',
                 'required' => false,
                 'placeholder' => 'Sélectionnez la mère',
-                'query_builder' => function (PersonRepository $er) {
-                    return $er->createQueryBuilder('p')
+                'query_builder' => function (PersonRepository $er) use ($options) {
+                    $qb = $er->createQueryBuilder('p')
                         ->where('p.gender = :gender')
                         ->setParameter('gender', Gender::FEMALE)
                         ->orderBy('p.lastName', 'ASC')
                         ->addOrderBy('p.firstName', 'ASC');
+                    
+                    // Exclure la personne courante si elle existe
+                    if (isset($options['data']) && $options['data']->getId()) {
+                        $qb->andWhere('p.id != :currentId')
+                           ->setParameter('currentId', $options['data']->getId());
+                    }
+                    
+                    return $qb;
                 }
             ])
             ->add('photo', TextType::class, [

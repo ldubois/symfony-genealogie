@@ -46,6 +46,10 @@ class Person
     private ?string $biography = null;
 
     #[ORM\ManyToOne(targetEntity: self::class)]
+    #[Assert\Expression(
+        "this.getFather() != this.getMother()",
+        message: "Une personne ne peut pas être à la fois le père et la mère"
+    )]
     private ?self $father = null;
 
     #[ORM\ManyToOne(targetEntity: self::class)]

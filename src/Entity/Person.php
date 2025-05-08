@@ -227,4 +227,32 @@ class Person
             )
         );
     }
+
+    /**
+     * Récupère tous les frères et sœurs d'une personne
+     * @return Collection<Person>
+     */
+    public function getSiblings(): Collection
+    {
+        $siblings = new ArrayCollection();
+        
+        // Récupérer les enfants des mêmes parents
+        if ($this->father) {
+            foreach ($this->father->getChildren() as $sibling) {
+                if ($sibling !== $this) {
+                    $siblings->add($sibling);
+                }
+            }
+        }
+        
+        if ($this->mother) {
+            foreach ($this->mother->getChildren() as $sibling) {
+                if ($sibling !== $this && !$siblings->contains($sibling)) {
+                    $siblings->add($sibling);
+                }
+            }
+        }
+        
+        return $siblings;
+    }
 }

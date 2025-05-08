@@ -5,60 +5,102 @@
 {% block stylesheets %}
     <style>
         .tree-container {
-            overflow-x: auto;
+            width: 100%;
+            min-height: 600px;
             padding: 20px;
+            position: relative;
         }
         .tree {
             display: flex;
             flex-direction: column;
             align-items: center;
+            gap: 40px;
+            position: relative;
         }
         .tree-level {
             display: flex;
             justify-content: center;
-            margin: 20px 0;
+            gap: 20px;
+            width: 100%;
             position: relative;
         }
-        .tree-node {
+        .person-card {
+            background: white;
             border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px;
-            margin: 0 10px;
-            background-color: #fff;
-            min-width: 200px;
+            border-radius: 8px;
+            padding: 15px;
+            width: 250px;
             text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             position: relative;
+            z-index: 1;
         }
-        .tree-node.current {
-            background-color: #e3f2fd;
+        .person-card.current {
+            background: #e3f2fd;
             border-color: #2196f3;
         }
-        .tree-node img {
+        .person-photo {
             width: 100px;
             height: 100px;
-            object-fit: cover;
             border-radius: 50%;
+            object-fit: cover;
             margin-bottom: 10px;
         }
-        .tree-lines {
+        .person-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .person-dates {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        .person-link {
+            display: inline-block;
+            padding: 5px 10px;
+            background: #2196f3;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .person-link:hover {
+            background: #1976d2;
+        }
+        /* Styles pour les lignes de connexion */
+        .tree-level::before {
+            content: '';
             position: absolute;
-            top: -20px;
-            left: 0;
-            right: 0;
-            height: 20px;
-            display: flex;
-            justify-content: center;
-        }
-        .tree-line {
             width: 2px;
-            background-color: #ddd;
-            height: 100%;
+            background: #2196f3;
+            top: -40px;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 0;
         }
-        .tree-line-horizontal {
+        .tree-level:first-child::before {
+            top: 50%;
+        }
+        .tree-level:last-child::before {
+            bottom: 50%;
+        }
+        .person-card::before {
+            content: '';
             position: absolute;
             height: 2px;
-            background-color: #ddd;
-            top: -20px;
+            background: #2196f3;
+            top: 50%;
+            left: -20px;
+            right: -20px;
+            z-index: 0;
+        }
+        .person-card:first-child::before {
+            left: 50%;
+        }
+        .person-card:last-child::before {
+            right: 50%;
         }
     </style>
 {% endblock %}
@@ -73,82 +115,116 @@
 
     <div class="tree-container">
         <div class="tree">
-            {# Ancêtres #}
-            {% for i in 0..3 %}
+            {# Parents #}
+            {% if person.father or person.mother %}
                 <div class="tree-level">
-                    {% set levelAncestors = ancestors|filter(a => a.generation == i) %}
-                    {% if levelAncestors|length > 0 %}
-                        {% for ancestor in levelAncestors %}
-                            <div class="tree-node">
-                                {% if ancestor.photo %}
-                                    <img src="{{ ancestor.photo }}" alt="{{ ancestor.fullName }}">
-                                {% endif %}
-                                <h5>{{ ancestor.fullName }}</h5>
-                                {% if ancestor.birthDate %}
-                                    <p class="text-muted">
-                                        {{ ancestor.birthDate|date('d/m/Y') }}
-                                        {% if ancestor.deathDate %}
-                                            - {{ ancestor.deathDate|date('d/m/Y') }}
-                                        {% endif %}
-                                    </p>
-                                {% endif %}
-                                <a href="{{ path('app_person_show', {'id': ancestor.id}) }}" class="btn btn-sm btn-info">
-                                    Voir les détails
-                                </a>
-                            </div>
-                        {% endfor %}
+                    {% if person.father %}
+                        <div class="person-card">
+                            {% if person.father.photo %}
+                                <img src="{{ person.father.photo }}" alt="{{ person.father.fullName }}" class="person-photo">
+                            {% else %}
+                                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjY2NjYyI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MyLjY3IDAgNC44NCAyLjE3IDQuODQgNC44NCAwIDIuNjctMi4xNyA0Ljg0LTQuODQgNC44NC0yLjY3IDAtNC44NC0yLjE3LTQuODQtNC44NCAwLTIuNjcgMi4xNy00Ljg0IDQuODQtNC44NHptMCAxMmM0LjQyIDAgOC4xNy0yLjI4IDkuNTQtNS41NS0yLjY5LTMuMTktNi41My01LjA1LTEwLjg2LTUuMDUtNC4zMyAwLTguMTcgMS44Ni0xMC44NiA1LjA1IDEuMzcgMy4yNyA1LjEyIDUuNTUgOS41NCA1LjU1eiIvPjwvc3ZnPg==" alt="Photo par défaut" class="person-photo">
+                            {% endif %}
+                            <div class="person-name">{{ person.father.fullName }}</div>
+                            {% if person.father.birthDate %}
+                                <div class="person-dates">
+                                    {{ person.father.birthDate|date('d/m/Y') }}
+                                    {% if person.father.deathDate %}
+                                        - {{ person.father.deathDate|date('d/m/Y') }}
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            <a href="{{ path('app_person_show', {'id': person.father.id}) }}" class="person-link">Voir les détails</a>
+                        </div>
+                    {% endif %}
+                    {% if person.mother %}
+                        <div class="person-card">
+                            {% if person.mother.photo %}
+                                <img src="{{ person.mother.photo }}" alt="{{ person.mother.fullName }}" class="person-photo">
+                            {% else %}
+                                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjY2NjYyI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MyLjY3IDAgNC44NCAyLjE3IDQuODQgNC44NCAwIDIuNjctMi4xNyA0Ljg0LTQuODQgNC44NC0yLjY3IDAtNC44NC0yLjE3LTQuODQtNC44NCAwLTIuNjcgMi4xNy00Ljg0IDQuODQtNC44NHptMCAxMmM0LjQyIDAgOC4xNy0yLjI4IDkuNTQtNS41NS0yLjY5LTMuMTktNi41My01LjA1LTEwLjg2LTUuMDUtNC4zMyAwLTguMTcgMS44Ni0xMC44NiA1LjA1IDEuMzcgMy4yNyA1LjEyIDUuNTUgOS41NCA1LjU1eiIvPjwvc3ZnPg==" alt="Photo par défaut" class="person-photo">
+                            {% endif %}
+                            <div class="person-name">{{ person.mother.fullName }}</div>
+                            {% if person.mother.birthDate %}
+                                <div class="person-dates">
+                                    {{ person.mother.birthDate|date('d/m/Y') }}
+                                    {% if person.mother.deathDate %}
+                                        - {{ person.mother.deathDate|date('d/m/Y') }}
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            <a href="{{ path('app_person_show', {'id': person.mother.id}) }}" class="person-link">Voir les détails</a>
+                        </div>
                     {% endif %}
                 </div>
-            {% endfor %}
+            {% endif %}
 
-            {# Personne actuelle #}
+            {# Personne actuelle et frères/sœurs #}
             <div class="tree-level">
-                <div class="tree-node current">
+                {% if person.siblings|length > 0 %}
+                    {% for sibling in person.siblings %}
+                        <div class="person-card">
+                            {% if sibling.photo %}
+                                <img src="{{ sibling.photo }}" alt="{{ sibling.fullName }}" class="person-photo">
+                            {% else %}
+                                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjY2NjYyI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MyLjY3IDAgNC44NCAyLjE3IDQuODQgNC44NCAwIDIuNjctMi4xNyA0Ljg0LTQuODQgNC44NC0yLjY3IDAtNC44NC0yLjE3LTQuODQtNC44NCAwLTIuNjcgMi4xNy00Ljg0IDQuODQtNC44NHptMCAxMmM0LjQyIDAgOC4xNy0yLjI4IDkuNTQtNS41NS0yLjY5LTMuMTktNi41My01LjA1LTEwLjg2LTUuMDUtNC4zMyAwLTguMTcgMS44Ni0xMC44NiA1LjA1IDEuMzcgMy4yNyA1LjEyIDUuNTUgOS41NCA1LjU1eiIvPjwvc3ZnPg==" alt="Photo par défaut" class="person-photo">
+                            {% endif %}
+                            <div class="person-name">{{ sibling.fullName }}</div>
+                            {% if sibling.birthDate %}
+                                <div class="person-dates">
+                                    {{ sibling.birthDate|date('d/m/Y') }}
+                                    {% if sibling.deathDate %}
+                                        - {{ sibling.deathDate|date('d/m/Y') }}
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            <a href="{{ path('app_person_show', {'id': sibling.id}) }}" class="person-link">Voir les détails</a>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                <div class="person-card current">
                     {% if person.photo %}
-                        <img src="{{ person.photo }}" alt="{{ person.fullName }}">
+                        <img src="{{ person.photo }}" alt="{{ person.fullName }}" class="person-photo">
+                    {% else %}
+                        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjY2NjYyI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MyLjY3IDAgNC44NCAyLjE3IDQuODQgNC44NCAwIDIuNjctMi4xNyA0Ljg0LTQuODQgNC44NC0yLjY3IDAtNC44NC0yLjE3LTQuODQtNC44NCAwLTIuNjcgMi4xNy00Ljg0IDQuODQtNC44NHptMCAxMmM0LjQyIDAgOC4xNy0yLjI4IDkuNTQtNS41NS0yLjY5LTMuMTktNi41My01LjA1LTEwLjg2LTUuMDUtNC4zMyAwLTguMTcgMS44Ni0xMC44NiA1LjA1IDEuMzcgMy4yNyA1LjEyIDUuNTUgOS41NCA1LjU1eiIvPjwvc3ZnPg==" alt="Photo par défaut" class="person-photo">
                     {% endif %}
-                    <h5>{{ person.fullName }}</h5>
+                    <div class="person-name">{{ person.fullName }}</div>
                     {% if person.birthDate %}
-                        <p class="text-muted">
+                        <div class="person-dates">
                             {{ person.birthDate|date('d/m/Y') }}
                             {% if person.deathDate %}
                                 - {{ person.deathDate|date('d/m/Y') }}
                             {% endif %}
-                        </p>
+                        </div>
                     {% endif %}
-                    <a href="{{ path('app_person_show', {'id': person.id}) }}" class="btn btn-sm btn-info">
-                        Voir les détails
-                    </a>
+                    <a href="{{ path('app_person_show', {'id': person.id}) }}" class="person-link">Voir les détails</a>
                 </div>
             </div>
 
-            {# Descendants #}
-            {% for i in 0..3 %}
+            {# Enfants #}
+            {% if person.children|length > 0 %}
                 <div class="tree-level">
-                    {% set levelDescendants = descendants|filter(d => d.generation == i) %}
-                    {% if levelDescendants|length > 0 %}
-                        {% for descendant in levelDescendants %}
-                            <div class="tree-node">
-                                {% if descendant.photo %}
-                                    <img src="{{ descendant.photo }}" alt="{{ descendant.fullName }}">
-                                {% endif %}
-                                <h5>{{ descendant.fullName }}</h5>
-                                {% if descendant.birthDate %}
-                                    <p class="text-muted">
-                                        {{ descendant.birthDate|date('d/m/Y') }}
-                                        {% if descendant.deathDate %}
-                                            - {{ descendant.deathDate|date('d/m/Y') }}
-                                        {% endif %}
-                                    </p>
-                                {% endif %}
-                                <a href="{{ path('app_person_show', {'id': descendant.id}) }}" class="btn btn-sm btn-info">
-                                    Voir les détails
-                                </a>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
+                    {% for child in person.children %}
+                        <div class="person-card">
+                            {% if child.photo %}
+                                <img src="{{ child.photo }}" alt="{{ child.fullName }}" class="person-photo">
+                            {% else %}
+                                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjY2NjYyI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MyLjY3IDAgNC44NCAyLjE3IDQuODQgNC44NCAwIDIuNjctMi4xNyA0Ljg0LTQuODQgNC44NC0yLjY3IDAtNC44NC0yLjE3LTQuODQtNC44NCAwLTIuNjcgMi4xNy00Ljg0IDQuODQtNC44NHptMCAxMmM0LjQyIDAgOC4xNy0yLjI4IDkuNTQtNS41NS0yLjY5LTMuMTktNi41My01LjA1LTEwLjg2LTUuMDUtNC4zMyAwLTguMTcgMS44Ni0xMC44NiA1LjA1IDEuMzcgMy4yNyA1LjEyIDUuNTUgOS41NCA1LjU1eiIvPjwvc3ZnPg==" alt="Photo par défaut" class="person-photo">
+                            {% endif %}
+                            <div class="person-name">{{ child.fullName }}</div>
+                            {% if child.birthDate %}
+                                <div class="person-dates">
+                                    {{ child.birthDate|date('d/m/Y') }}
+                                    {% if child.deathDate %}
+                                        - {{ child.deathDate|date('d/m/Y') }}
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            <a href="{{ path('app_person_show', {'id': child.id}) }}" class="person-link">Voir les détails</a>
+                        </div>
+                    {% endfor %}
                 </div>
-            {% endfor %}
+            {% endif %}
         </div>
     </div>
 {% endblock %} 

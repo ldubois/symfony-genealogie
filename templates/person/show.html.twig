@@ -107,6 +107,34 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
+                    <h5 class="card-title">Frères et sœurs</h5>
+                    {% if person.siblings|length > 0 %}
+                        <div class="row">
+                            {% for sibling in person.siblings %}
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <p class="card-text">{{ sibling.fullName }}</p>
+                                            <a href="{{ path('app_person_show', {'id': sibling.id}) }}" class="btn btn-sm btn-info">
+                                                Voir les détails
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Aucun frère ou sœur enregistré</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
                     <h5 class="card-title">Enfants</h5>
                     {% if descendants|length > 0 %}
                         <div class="row">

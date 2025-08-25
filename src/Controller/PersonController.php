@@ -14,6 +14,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Service\FamilyTreeService;
 
 #[Route('/person')]
 class PersonController extends AbstractController
@@ -23,6 +24,24 @@ class PersonController extends AbstractController
     {
         return $this->render('person/index.html.twig', [
             'people' => $personRepository->findAllOrderedByName(),
+        ]);
+    }
+
+    #[Route('/arbre-complet', name: 'app_person_full_tree', methods: ['GET'])]
+    public function fullTree(PersonRepository $personRepository, FamilyTreeService $familyTreeService): Response
+    {
+        // Récupérer toutes les personnes triées par nom
+        $people = $personRepository->findAllOrderedByName();
+        
+        // Organiser par générations
+        $generations = $familyTreeService->organizeByGenerations($people);
+        
+        // Obtenir les données de connexion
+        $connections = $familyTreeService->getConnectionData($generations);
+
+        return $this->render('person/full_tree.html.twig', [
+            'generations' => $generations,
+            'connections' => $connections,
         ]);
     }
 

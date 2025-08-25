@@ -1,0 +1,578 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Arbre Généalogique Complet{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .tree-container {
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            overflow-x: auto;
+        }
+        
+        .tree-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .tree-header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .tree-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3498db;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .tree-svg-container {
+            position: relative;
+            width: 100%;
+            min-height: 800px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .tree-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .tree-content {
+            position: relative;
+            z-index: 2;
+            padding: 40px;
+            min-width: 1200px;
+        }
+        
+        .generation {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            margin-bottom: 100px;
+            position: relative;
+        }
+        
+        .generation-label {
+            position: absolute;
+            left: -30px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+            background: #3498db;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .person-node {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 0 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 3px solid;
+            min-width: 180px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .person-node.male {
+            border-color: #3498db;
+            background: linear-gradient(135deg, #ffffff 0%, #ebf3fd 100%);
+        }
+        
+        .person-node.female {
+            border-color: #e91e63;
+            background: linear-gradient(135deg, #ffffff 0%, #fce4ec 100%);
+        }
+        
+        .person-node.unknown {
+            border-color: #95a5a6;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        }
+        
+        .person-node:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        
+        .person-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+        }
+        
+        .person-avatar.male {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+        
+        .person-avatar.female {
+            background: linear-gradient(135deg, #e91e63, #c2185b);
+        }
+        
+        .person-avatar.unknown {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+        
+        .person-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .person-dates {
+            color: #7f8c8d;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+        
+        .person-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .conjugal-tag {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            display: inline-block;
+        }
+        
+        .conjugal-tag.conjoint {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .conjugal-tag.ex-conjoint {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .conjugal-tag.compagnon {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+        
+        .person-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+        
+        .btn-tree {
+            padding: 4px 8px;
+            font-size: 0.7rem;
+            border-radius: 4px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .connection-line {
+            stroke: #7f8c8d;
+            stroke-width: 2;
+            fill: none;
+        }
+        
+        .connection-line.parent-child {
+            stroke: #3498db;
+            stroke-width: 3;
+        }
+        
+        .connection-line.conjugal {
+            stroke: #e91e63;
+            stroke-width: 2;
+            stroke-dasharray: 5,5;
+        }
+        
+        .search-controls {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .search-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px 20px;
+            border: 2px solid #ecf0f1;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+            margin-bottom: 10px;
+        }
+        
+        .search-input:focus {
+            border-color: #3498db;
+        }
+        
+        .tree-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .control-btn {
+            padding: 8px 16px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .control-btn:hover {
+            background: #2980b9;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="tree-container">
+    <div class="tree-header">
+        <h1><i class="fas fa-sitemap"></i> Arbre Généalogique Complet</h1>
+        <p class="text-muted">Visualisation complète des relations familiales</p>
+        
+        <div class="tree-stats">
+            {% set totalPeople = 0 %}
+            {% set totalMen = 0 %}
+            {% set totalWomen = 0 %}
+            
+            {% for level, people in generations %}
+                {% for person in people %}
+                    {% set totalPeople = totalPeople + 1 %}
+                    {% if person.gender and person.gender.value == 'homme' %}
+                        {% set totalMen = totalMen + 1 %}
+                    {% else %}
+                        {% set totalWomen = totalWomen + 1 %}
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+            
+            <div class="stat-item">
+                <div class="stat-number">{{ totalPeople }}</div>
+                <div class="stat-label">Personnes</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{{ totalMen }}</div>
+                <div class="stat-label">Hommes</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{{ totalWomen }}</div>
+                <div class="stat-label">Femmes</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="search-controls">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Rechercher une personne...">
+    </div>
+    
+    <div class="tree-controls">
+        <button class="control-btn" onclick="centerTree()">
+            <i class="fas fa-crosshairs"></i> Centrer
+        </button>
+        <button class="control-btn" onclick="zoomIn()">
+            <i class="fas fa-search-plus"></i> Zoom +
+        </button>
+        <button class="control-btn" onclick="zoomOut()">
+            <i class="fas fa-search-minus"></i> Zoom -
+        </button>
+        <button class="control-btn" onclick="toggleConnections()">
+            <i class="fas fa-project-diagram"></i> Connexions
+        </button>
+    </div>
+    
+    <div class="tree-svg-container" id="treeContainer">
+        <svg class="tree-svg" id="treeSvg">
+            <!-- Les connexions seront dessinées ici par JavaScript -->
+        </svg>
+        
+        <div class="tree-content" id="treeContent">
+            <!-- Afficher les générations (des plus vieux vers les plus jeunes) -->
+            {% for level in generations|keys|sort|reverse %}
+                {% if level != 'isolated' %}
+                    <div class="generation" data-level="{{ level }}">
+                        <div class="generation-label">Génération {{ level + 1 }}</div>
+                        
+                        {% for person in generations[level] %}
+                            {% set genderClass = person.gender ? (person.gender.value == 'homme' ? 'male' : 'female') : 'unknown' %}
+                            <div class="person-node {{ genderClass }}" 
+                                 data-person-id="{{ person.id }}" 
+                                 data-level="{{ level }}"
+                                 data-name="{{ person.fullName|lower }}"
+                                 data-father-id="{{ person.father ? person.father.id : '' }}"
+                                 data-mother-id="{{ person.mother ? person.mother.id : '' }}">
+                                
+                                <div class="person-avatar {{ genderClass }}">
+                                    {% if person.gender and person.gender.value == 'homme' %}
+                                        👨
+                                    {% else %}
+                                        👩
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="person-name">{{ person.fullName }}</div>
+                                
+                                <div class="person-dates">
+                                    {% if person.birthDate %}
+                                        <div><i class="fas fa-birthday-cake"></i> {{ person.birthDate|date('d/m/Y') }}</div>
+                                    {% endif %}
+                                    {% if person.deathDate %}
+                                        <div><i class="fas fa-cross"></i> {{ person.deathDate|date('d/m/Y') }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Liens conjugaux -->
+                                {% set conjugalLinks = [] %}
+                                {% for lien in person.tousLesLiens %}
+                                    {% if lien.typeLien.nom in ['Conjoint', 'Ex-conjoint', 'Compagnon', 'Séparé'] %}
+                                        {% set conjugalLinks = conjugalLinks|merge([lien]) %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if conjugalLinks|length > 0 %}
+                                    <div class="person-links">
+                                        {% for lien in conjugalLinks %}
+                                            {% set otherPerson = lien.autrePersonne(person) %}
+                                            <span class="conjugal-tag {{ lien.typeLien.nom|lower|replace({' ': '-'}) }}">
+                                                {% if lien.typeLien.nom == 'Conjoint' %}💑
+                                                {% elseif lien.typeLien.nom == 'Ex-conjoint' %}💔
+                                                {% elseif lien.typeLien.nom == 'Compagnon' %}💕
+                                                {% elseif lien.typeLien.nom == 'Séparé' %}💔
+                                                {% endif %}
+                                                {{ otherPerson.firstName }}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="person-actions">
+                                    <a href="{{ path('app_person_show', {id: person.id}) }}" class="btn btn-primary btn-tree">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ path('app_person_tree', {id: person.id}) }}" class="btn btn-success btn-tree">
+                                        <i class="fas fa-sitemap"></i>
+                                    </a>
+                                    <a href="{{ path('app_person_edit', {id: person.id}) }}" class="btn btn-warning btn-tree">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+            
+            <!-- Afficher les personnes isolées s'il y en a -->
+            {% if generations['isolated'] is defined and generations['isolated']|length > 0 %}
+                <div class="generation" data-level="isolated">
+                    <div class="generation-label">Personnes isolées</div>
+                    
+                    {% for person in generations['isolated'] %}
+                        {% set genderClass = person.gender ? (person.gender.value == 'homme' ? 'male' : 'female') : 'unknown' %}
+                        <div class="person-node {{ genderClass }}" 
+                             data-person-id="{{ person.id }}" 
+                             data-level="isolated"
+                             data-name="{{ person.fullName|lower }}"
+                             data-father-id="{{ person.father ? person.father.id : '' }}"
+                             data-mother-id="{{ person.mother ? person.mother.id : '' }}">
+                            
+                            <div class="person-avatar {{ genderClass }}">
+                                {% if person.gender and person.gender.value == 'homme' %}
+                                    👨
+                                {% else %}
+                                    👩
+                                {% endif %}
+                            </div>
+                            
+                            <div class="person-name">{{ person.fullName }}</div>
+                            
+                            <div class="person-dates">
+                                {% if person.birthDate %}
+                                    <div><i class="fas fa-birthday-cake"></i> {{ person.birthDate|date('d/m/Y') }}</div>
+                                {% endif %}
+                                {% if person.deathDate %}
+                                    <div><i class="fas fa-cross"></i> {{ person.deathDate|date('d/m/Y') }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="person-actions">
+                                <a href="{{ path('app_person_show', {id: person.id}) }}" class="btn btn-primary btn-tree">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ path('app_person_tree', {id: person.id}) }}" class="btn btn-success btn-tree">
+                                    <i class="fas fa-sitemap"></i>
+                                </a>
+                                <a href="{{ path('app_person_edit', {id: person.id}) }}" class="btn btn-warning btn-tree">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const treeContent = document.getElementById('treeContent');
+    const treeSvg = document.getElementById('treeSvg');
+    const personNodes = treeContent.querySelectorAll('.person-node');
+    
+    let showConnections = true;
+    let zoomLevel = 1;
+    
+    // Données de connexion du contrôleur
+    const connections = {{ connections|json_encode|raw }};
+    
+    // Recherche
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        personNodes.forEach(node => {
+            const personName = node.dataset.name;
+            if (personName.includes(searchTerm)) {
+                node.style.display = 'block';
+                node.style.opacity = '1';
+                node.style.transform = searchTerm ? 'scale(1.05)' : '';
+                node.style.boxShadow = searchTerm ? '0 8px 25px rgba(52, 152, 219, 0.4)' : '';
+            } else {
+                node.style.opacity = searchTerm ? '0.3' : '1';
+                node.style.transform = '';
+                node.style.boxShadow = '';
+            }
+        });
+    });
+    
+    // Dessiner les connexions
+    function drawConnections() {
+        if (!showConnections) {
+            treeSvg.innerHTML = '';
+            return;
+        }
+        
+        let svgContent = '';
+        
+        connections.forEach(conn => {
+            const fromNode = document.querySelector(`[data-person-id="${conn.from}"]`);
+            const toNode = document.querySelector(`[data-person-id="${conn.to}"]`);
+            
+            if (fromNode && toNode) {
+                const fromRect = fromNode.getBoundingClientRect();
+                const toRect = toNode.getBoundingClientRect();
+                const containerRect = treeContent.getBoundingClientRect();
+                
+                const fromX = fromRect.left - containerRect.left + fromRect.width / 2;
+                const fromY = fromRect.top - containerRect.top + fromRect.height;
+                const toX = toRect.left - containerRect.left + toRect.width / 2;
+                const toY = toRect.top - containerRect.top;
+                
+                if (conn.type === 'parent-child') {
+                    const midY = (fromY + toY) / 2;
+                    svgContent += `
+                        <path d="M ${fromX} ${fromY} 
+                                 Q ${fromX} ${midY} ${(fromX + toX) / 2} ${midY}
+                                 Q ${toX} ${midY} ${toX} ${toY}" 
+                              class="connection-line parent-child" />
+                    `;
+                } else if (conn.type === 'conjugal') {
+                    svgContent += `
+                        <line x1="${fromX}" y1="${fromY - fromRect.height/2}" 
+                              x2="${toX}" y2="${toY + toRect.height/2}" 
+                              class="connection-line conjugal" />
+                    `;
+                }
+            }
+        });
+        
+        treeSvg.innerHTML = svgContent;
+    }
+    
+    // Fonctions de contrôle
+    window.centerTree = function() {
+        treeContent.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+    
+    window.zoomIn = function() {
+        zoomLevel = Math.min(zoomLevel + 0.1, 2);
+        treeContent.style.transform = `scale(${zoomLevel})`;
+        setTimeout(drawConnections, 300);
+    };
+    
+    window.zoomOut = function() {
+        zoomLevel = Math.max(zoomLevel - 0.1, 0.5);
+        treeContent.style.transform = `scale(${zoomLevel})`;
+        setTimeout(drawConnections, 300);
+    };
+    
+    window.toggleConnections = function() {
+        showConnections = !showConnections;
+        drawConnections();
+    };
+    
+    // Dessiner les connexions au chargement
+    setTimeout(drawConnections, 500);
+    
+    // Redessiner lors du redimensionnement
+    window.addEventListener('resize', function() {
+        setTimeout(drawConnections, 300);
+    });
+});
+</script>
+{% endblock %}

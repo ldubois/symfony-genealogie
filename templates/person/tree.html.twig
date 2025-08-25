@@ -6,101 +6,180 @@
     <style>
         .tree-container {
             width: 100%;
-            min-height: 600px;
-            padding: 20px;
+            min-height: 800px;
+            padding: 40px 20px;
             position: relative;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            overflow: hidden;
         }
+        
         .tree {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 40px;
+            gap: 80px;
             position: relative;
+            z-index: 2;
         }
+        
         .tree-level {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 40px;
             width: 100%;
             position: relative;
         }
+        
         .person-card {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            width: 250px;
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+            border: 2px solid #e9ecef;
+            border-radius: 20px;
+            padding: 20px;
+            width: 280px;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 
+                0 8px 32px rgba(0,0,0,0.1),
+                0 2px 8px rgba(0,0,0,0.05);
             position: relative;
-            z-index: 1;
+            z-index: 10;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
         }
-        .person-card.current {
-            background: #e3f2fd;
+        
+        .person-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.15),
+                0 8px 16px rgba(0,0,0,0.1);
             border-color: #2196f3;
         }
+        
+        .person-card.current {
+            background: linear-gradient(145deg, #e3f2fd 0%, #bbdefb 100%);
+            border-color: #2196f3;
+            border-width: 3px;
+            box-shadow: 
+                0 12px 40px rgba(33, 150, 243, 0.3),
+                0 4px 12px rgba(33, 150, 243, 0.2);
+        }
+        
+        .person-card.current::before {
+            content: '👑';
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            font-size: 2rem;
+            z-index: 11;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
         .person-photo {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             object-fit: cover;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            border: 4px solid #fff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
         }
+        
+        .person-card:hover .person-photo {
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+        
         .person-name {
-            font-size: 1.1em;
-            font-weight: bold;
-            margin-bottom: 5px;
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
+        
         .person-dates {
-            color: #666;
-            font-size: 0.9em;
-            margin-bottom: 10px;
+            color: #6c757d;
+            font-size: 0.95em;
+            margin-bottom: 15px;
+            font-weight: 500;
         }
+        
         .person-link {
             display: inline-block;
-            padding: 5px 10px;
-            background: #2196f3;
+            padding: 8px 16px;
+            background: linear-gradient(45deg, #2196f3, #21cbf3);
             color: white;
             text-decoration: none;
-            border-radius: 4px;
+            border-radius: 25px;
             font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
         }
+        
         .person-link:hover {
-            background: #1976d2;
+            background: linear-gradient(45deg, #1976d2, #1cb5e0);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+            color: white;
         }
-        /* Styles pour les lignes de connexion */
-        .tree-level::before {
-            content: '';
+        
+        /* SVG pour les connexions */
+        .tree-connections {
             position: absolute;
-            width: 2px;
-            background: #2196f3;
-            top: -40px;
-            bottom: -40px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 0;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
         }
-        .tree-level:first-child::before {
-            top: 50%;
+        
+        .connection-path {
+            fill: none;
+            stroke: #2196f3;
+            stroke-width: 3;
+            stroke-linecap: round;
+            opacity: 0.8;
+            filter: drop-shadow(0 2px 4px rgba(33, 150, 243, 0.3));
         }
-        .tree-level:last-child::before {
-            bottom: 50%;
+        
+        .connection-arrow {
+            fill: #2196f3;
+            opacity: 0.9;
         }
-        .person-card::before {
-            content: '';
-            position: absolute;
-            height: 2px;
-            background: #2196f3;
-            top: 50%;
-            left: -20px;
-            right: -20px;
-            z-index: 0;
+        
+        /* Animation des connexions */
+        .connection-path {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: drawPath 2s ease-in-out forwards;
         }
-        .person-card:first-child::before {
-            left: 50%;
+        
+        @keyframes drawPath {
+            to {
+                stroke-dashoffset: 0;
+            }
         }
-        .person-card:last-child::before {
-            right: 50%;
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .tree-level {
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+            
+            .person-card {
+                width: 250px;
+            }
         }
     </style>
 {% endblock %}
@@ -113,13 +192,23 @@
         </a>
     </div>
 
-    <div class="tree-container">
+    <div class="tree-container" id="tree-container">
+        <!-- SVG pour les connexions -->
+        <svg class="tree-connections" id="connections-svg">
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                        refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" class="connection-arrow" />
+                </marker>
+            </defs>
+        </svg>
+        
         <div class="tree">
             {# Parents #}
             {% if person.father or person.mother %}
-                <div class="tree-level">
+                <div class="tree-level" data-level="parents">
                     {% if person.father %}
-                        <div class="person-card">
+                        <div class="person-card" data-person="father">
                             {% if person.father.photo %}
                                 <img src="{{ person.father.photo }}" alt="{{ person.father.fullName }}" class="person-photo">
                             {% else %}
@@ -138,11 +227,11 @@
                         </div>
                     {% endif %}
                     {% if person.mother %}
-                        <div class="person-card">
+                        <div class="person-card" data-person="mother">
                             {% if person.mother.photo %}
                                 <img src="{{ person.mother.photo }}" alt="{{ person.mother.fullName }}" class="person-photo">
                             {% else %}
-                                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjY2NjYyI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MyLjY3IDAgNC44NCAyLjE3IDQuODQgNC44NCAwIDIuNjctMi4xNyA0Ljg0LTQuODQgNC44NC0yLjY3IDAtNC44NC0yLjE3LTQuODQtNC44NCAwLTIuNjcgMi4xNy00Ljg0IDQuODQtNC44NHptMCAxMmM0LjQyIDAgOC4xNy0yLjI4IDkuNTQtNS41NS0yLjY5LTMuMTktNi41My01LjA1LTEwLjg2LTUuMDUtNC4zMyAwLTguMTcgMS44Ni0xMC44NiA1LjA1IDEuMzcgMy4yNyA1LjEyIDUuNTUgOS41NCA1LjU1eiIvPjwvc3ZnPg==" alt="Photo par défaut" class="person-photo">
+                                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjY2NjYyI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MyLjY3IDAgNC44NCAyLjE3IDQuODQgNC44NCAwIDIuNjctMi4xNyA0Ljg0LTQuODQgNC44NC0yLjY3IDAtNC44NC0yLjE3LTQuODQtNC44NCAwLTIuNjcgMi4xNy00Ljg0IDQuODQtNC44NHptMCAxMmM0LjQyIDAgOC4xNy0yLjI4IDkuNTQtNS41NS0yLjY5LTMuMTktNi41My01LjA1LTEwLjg2LTUuMDUtNC4zMyAwLTguMTcgMS44Ni0xMC44NiA5LjA1IDEuMzcgMy4yNyA1LjEyIDUuNTUgOS41NCA1LjU1eiIvPjwvc3ZnPg==" alt="Photo par défaut" class="person-photo">
                             {% endif %}
                             <div class="person-name">{{ person.mother.fullName }}</div>
                             {% if person.mother.birthDate %}
@@ -160,10 +249,10 @@
             {% endif %}
 
             {# Personne actuelle et frères/sœurs #}
-            <div class="tree-level">
+            <div class="tree-level" data-level="current">
                 {% if person.siblings|length > 0 %}
                     {% for sibling in person.siblings %}
-                        <div class="person-card">
+                        <div class="person-card" data-person="sibling">
                             {% if sibling.photo %}
                                 <img src="{{ sibling.photo }}" alt="{{ sibling.fullName }}" class="person-photo">
                             {% else %}
@@ -182,7 +271,7 @@
                         </div>
                     {% endfor %}
                 {% endif %}
-                <div class="person-card current">
+                <div class="person-card current" data-person="current">
                     {% if person.photo %}
                         <img src="{{ person.photo }}" alt="{{ person.fullName }}" class="person-photo">
                     {% else %}
@@ -203,9 +292,9 @@
 
             {# Enfants #}
             {% if person.children|length > 0 %}
-                <div class="tree-level">
+                <div class="tree-level" data-level="children">
                     {% for child in person.children %}
-                        <div class="person-card">
+                        <div class="person-card" data-person="child">
                             {% if child.photo %}
                                 <img src="{{ child.photo }}" alt="{{ child.fullName }}" class="person-photo">
                             {% else %}
@@ -227,4 +316,122 @@
             {% endif %}
         </div>
     </div>
-{% endblock %} 
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            drawConnections();
+            
+            // Redessiner les connexions lors du redimensionnement
+            window.addEventListener('resize', function() {
+                setTimeout(drawConnections, 100);
+            });
+        });
+
+        function drawConnections() {
+            const svg = document.getElementById('connections-svg');
+            const container = document.getElementById('tree-container');
+            
+            // Vider les connexions existantes
+            svg.innerHTML = `
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                            refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" class="connection-arrow" />
+                    </marker>
+                </defs>
+            `;
+            
+            const containerRect = container.getBoundingClientRect();
+            
+            // Connexions parents -> personne actuelle
+            const parentsLevel = document.querySelector('[data-level="parents"]');
+            const currentLevel = document.querySelector('[data-level="current"]');
+            const currentPerson = document.querySelector('[data-person="current"]');
+            
+            if (parentsLevel && currentPerson) {
+                const parents = parentsLevel.querySelectorAll('.person-card');
+                parents.forEach(parent => {
+                    drawCurvedConnection(svg, parent, currentPerson, containerRect);
+                });
+            }
+            
+            // Connexions personne actuelle -> enfants
+            const childrenLevel = document.querySelector('[data-level="children"]');
+            if (currentPerson && childrenLevel) {
+                const children = childrenLevel.querySelectorAll('.person-card');
+                children.forEach(child => {
+                    drawCurvedConnection(svg, currentPerson, child, containerRect);
+                });
+            }
+            
+            // Connexions horizontales entre frères et sœurs
+            if (currentLevel) {
+                const siblings = currentLevel.querySelectorAll('[data-person="sibling"]');
+                if (siblings.length > 0) {
+                    // Ligne horizontale reliant tous les frères et sœurs + personne actuelle
+                    const allSiblings = [...siblings, currentPerson];
+                    drawSiblingsConnection(svg, allSiblings, containerRect);
+                }
+            }
+        }
+
+        function drawCurvedConnection(svg, fromElement, toElement, containerRect) {
+            const fromRect = fromElement.getBoundingClientRect();
+            const toRect = toElement.getBoundingClientRect();
+            
+            const fromX = fromRect.left + fromRect.width / 2 - containerRect.left;
+            const fromY = fromRect.bottom - containerRect.top;
+            const toX = toRect.left + toRect.width / 2 - containerRect.left;
+            const toY = toRect.top - containerRect.top;
+            
+            const midY = fromY + (toY - fromY) / 2;
+            
+            // Créer une courbe de Bézier
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const pathData = `M ${fromX} ${fromY} 
+                             C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY - 10}`;
+            
+            path.setAttribute('d', pathData);
+            path.setAttribute('class', 'connection-path');
+            path.setAttribute('marker-end', 'url(#arrowhead)');
+            
+            svg.appendChild(path);
+        }
+
+        function drawSiblingsConnection(svg, siblings, containerRect) {
+            if (siblings.length < 2) return;
+            
+            const rects = siblings.map(sibling => sibling.getBoundingClientRect());
+            const leftmost = Math.min(...rects.map(rect => rect.left));
+            const rightmost = Math.max(...rects.map(rect => rect.right));
+            const y = rects[0].top + rects[0].height / 2 - containerRect.top;
+            
+            // Ligne horizontale principale
+            const mainLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            mainLine.setAttribute('x1', leftmost - containerRect.left - 20);
+            mainLine.setAttribute('y1', y);
+            mainLine.setAttribute('x2', rightmost - containerRect.left + 20);
+            mainLine.setAttribute('y2', y);
+            mainLine.setAttribute('class', 'connection-path');
+            mainLine.setAttribute('stroke-width', '2');
+            
+            svg.appendChild(mainLine);
+            
+            // Lignes verticales vers chaque frère/sœur
+            siblings.forEach(sibling => {
+                const rect = sibling.getBoundingClientRect();
+                const x = rect.left + rect.width / 2 - containerRect.left;
+                
+                const verticalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                verticalLine.setAttribute('x1', x);
+                verticalLine.setAttribute('y1', y);
+                verticalLine.setAttribute('x2', x);
+                verticalLine.setAttribute('y2', rect.top - containerRect.top + 10);
+                verticalLine.setAttribute('class', 'connection-path');
+                verticalLine.setAttribute('stroke-width', '2');
+                
+                svg.appendChild(verticalLine);
+            });
+        }
+    </script>
+{% endblock %}

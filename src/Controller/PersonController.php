@@ -4,9 +4,11 @@ namespace App\Controller;
 
 use App\Entity\Person;
 use App\Entity\Lien;
+use App\Entity\TypeLien;
 use App\Form\PersonType;
 use App\Form\QuickLienType;
 use App\Repository\PersonRepository;
+use App\Repository\TypeLienRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,7 +27,7 @@ class PersonController extends AbstractController
     }
 
     #[Route('/new', name: 'app_person_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    public function new(Request $request, EntityManagerInterface $entityManager, TypeLienRepository $typeLienRepository): Response
     {
         $person = new Person();
         $form = $this->createForm(PersonType::class, $person);
@@ -34,6 +36,9 @@ class PersonController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->persist($person);
             $entityManager->flush();
+
+            // Créer automatiquement les liens familiaux si des parents sont définis
+            $this->createFamilyLinks($person, $entityManager, $typeLienRepository);
 
             $this->addFlash('success', 'La personne a été créée avec succès.');
             return $this->redirectToRoute('app_person_show', ['id' => $person->getId()], Response::HTTP_SEE_OTHER);
@@ -118,4 +123,16 @@ class PersonController extends AbstractController
             'descendants' => $descendants,
         ]);
     }
+
+    private function createFamilyLinks(Person $person, EntityManagerInterface $entityManager, TypeLienRepository $typeLienRepository): void
+    {
+        // Note: Les relations père/mère/frère/sœur sont maintenant gérées par les champs de l'entité Person
+        // Cette méthode peut être utilisée pour créer d'autres types de liens si nécessaire
+        
+        // Exemple : créer des liens spéciaux ou des relations non-parentales
+        // Pour l'instant, cette méthode ne fait rien car les relations familiales de base
+        // sont gérées par father, mother et getSiblings()
+    }
+
+
 } 

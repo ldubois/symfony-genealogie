@@ -1,11 +1,83 @@
 {% form_theme form 'form/bootstrap_5_layout.html.twig' %}
 
+<style>
+    .gender-choice {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 10px;
+    }
+    
+    .gender-choice input[type="radio"] {
+        display: none;
+    }
+    
+    .gender-choice label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 15px 20px;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: white;
+        min-width: 80px;
+        text-align: center;
+    }
+    
+    .gender-choice label:hover {
+        border-color: #2196f3;
+        background: #f8f9ff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(33, 150, 243, 0.2);
+    }
+    
+    .gender-choice input[type="radio"]:checked + label {
+        border-color: #2196f3;
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        color: #1976d2;
+        font-weight: bold;
+    }
+    
+    .gender-choice label i {
+        font-size: 2rem;
+        margin-bottom: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .gender-choice input[type="radio"]:checked + label i {
+        transform: scale(1.1);
+    }
+    
+    .gender-choice label[for*="homme"] i {
+        color: #2196f3;
+    }
+    
+    .gender-choice label[for*="femme"] i {
+        color: #e91e63;
+    }
+    
+    .gender-choice input[type="radio"]:checked + label[for*="homme"] i {
+        color: #1976d2;
+    }
+    
+    .gender-choice input[type="radio"]:checked + label[for*="femme"] i {
+        color: #c2185b;
+    }
+</style>
+
 {{ form_start(form, {'attr': {'class': 'needs-validation'}}) }}
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title mb-4">Informations personnelles</h5>
-            <div class="row">
-                <div class="col-md-6">
+    <div class="row">
+        {# Colonne 1 : Informations personnelles #}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user me-2"></i>Informations personnelles
+                    </h5>
+                </div>
+                <div class="card-body">
                     {{ form_row(form.firstName, {
                         'attr': {
                             'class': 'form-control',
@@ -13,8 +85,7 @@
                         },
                         'label': 'Prénom'
                     }) }}
-                </div>
-                <div class="col-md-6">
+                    
                     {{ form_row(form.lastName, {
                         'attr': {
                             'class': 'form-control',
@@ -22,91 +93,28 @@
                         },
                         'label': 'Nom'
                     }) }}
-                </div>
-                <div class="col-md-6">
-                    {{ form_row(form.gender, {
-                        'label': 'Sexe',
-                        'attr': {
-                            'class': 'form-select'
-                        },
-                        'placeholder': 'Sélectionnez le sexe'
-                    }) }}
-                </div>
-            </div>
-
-            <h5 class="card-title mb-4 mt-4">Dates et lieux</h5>
-            <div class="row">
-                <div class="col-md-6">
-                    {{ form_row(form.birthDate, {
-                        'label': 'Date de naissance',
-                        'help': 'Format : JJ/MM/AAAA'
-                    }) }}
-                </div>
-                <div class="col-md-6">
-                    {{ form_row(form.birthPlace, {
-                        'attr': {
-                            'class': 'form-control',
-                            'placeholder': 'Entrez le lieu de naissance'
-                        },
-                        'label': 'Lieu de naissance'
-                    }) }}
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6">
-                    {{ form_row(form.deathDate, {
-                        'label': 'Date de décès',
-                        'help': 'Format : JJ/MM/AAAA'
-                    }) }}
-                </div>
-                <div class="col-md-6">
-                    {{ form_row(form.deathPlace, {
-                        'attr': {
-                            'class': 'form-control',
-                            'placeholder': 'Entrez le lieu de décès'
-                        },
-                        'label': 'Lieu de décès'
-                    }) }}
-                </div>
-            </div>
-
-            <h5 class="card-title mb-4 mt-4">Relations familiales</h5>
-            <div class="row">
-                <div class="col-md-6">
-                    {{ form_row(form.father, {
-                        'label': 'Père',
-                        'attr': {
-                            'class': 'form-select'
-                        }
-                    }) }}
-                </div>
-                <div class="col-md-6">
-                    {{ form_row(form.mother, {
-                        'label': 'Mère',
-                        'attr': {
-                            'class': 'form-select'
-                        }
-                    }) }}
-                </div>
-            </div>
-
-            <h5 class="card-title mb-4 mt-4">Informations complémentaires</h5>
-            <div class="row">
-                <div class="col-12">
-                    {{ form_row(form.biography, {
-                        'attr': {
-                            'class': 'form-control',
-                            'placeholder': 'Entrez la biographie',
-                            'rows': 5
-                        },
-                        'label': 'Biographie'
-                    }) }}
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-12">
+                    
+                    <div class="mb-3">
+                        {{ form_label(form.gender, 'Sexe') }}
+                        <div class="gender-choice">
+                            {% for choice in form.gender %}
+                                {{ form_widget(choice) }}
+                                {% if choice.vars.value == 'homme' %}
+                                    {{ form_label(choice, null, {
+                                        'label_html': true,
+                                        'label': '<i class="fas fa-mars"></i><br>Homme'
+                                    }) }}
+                                {% else %}
+                                    {{ form_label(choice, null, {
+                                        'label_html': true,
+                                        'label': '<i class="fas fa-venus"></i><br>Femme'
+                                    }) }}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        {{ form_errors(form.gender) }}
+                    </div>
+                    
                     {{ form_row(form.photo, {
                         'attr': {
                             'class': 'form-control',
@@ -119,15 +127,134 @@
             </div>
         </div>
 
-        <div class="card-footer bg-transparent">
-            <div class="d-flex justify-content-between align-items-center">
-                <a href="{{ path('app_person_index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Retour à la liste
-                </a>
-                <button class="btn btn-primary">
-                    <i class="fas fa-save me-1"></i> {{ button_label|default('Enregistrer') }}
-                </button>
+        {# Colonne 2 : Dates et lieux #}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>Dates et lieux
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {{ form_row(form.birthDate, {
+                        'label': 'Date de naissance',
+                        'help': 'Format : JJ/MM/AAAA'
+                    }) }}
+                    
+                    {{ form_row(form.birthPlace, {
+                        'attr': {
+                            'class': 'form-control',
+                            'placeholder': 'Entrez le lieu de naissance'
+                        },
+                        'label': 'Lieu de naissance'
+                    }) }}
+                    
+                    {{ form_row(form.deathDate, {
+                        'label': 'Date de décès',
+                        'help': 'Format : JJ/MM/AAAA'
+                    }) }}
+                    
+                    {{ form_row(form.deathPlace, {
+                        'attr': {
+                            'class': 'form-control',
+                            'placeholder': 'Entrez le lieu de décès'
+                        },
+                        'label': 'Lieu de décès'
+                    }) }}
+                </div>
+            </div>
+        </div>
+
+        {# Colonne 3 : Relations et biographie #}
+        <div class="col-lg-4 col-md-12 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>Relations familiales
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {{ form_row(form.father, {
+                        'label': 'Père',
+                        'attr': {
+                            'class': 'form-select'
+                        }
+                    }) }}
+                    
+                    {{ form_row(form.mother, {
+                        'label': 'Mère',
+                        'attr': {
+                            'class': 'form-select'
+                        }
+                    }) }}
+                    
+                    <div class="mt-3">
+                        <h6 class="text-muted">
+                            <i class="fas fa-book me-2"></i>Biographie
+                        </h6>
+                        {{ form_row(form.biography, {
+                            'attr': {
+                                'class': 'form-control',
+                                'placeholder': 'Entrez la biographie',
+                                'rows': 6
+                            },
+                            'label': false
+                        }) }}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-{{ form_end(form) }} 
+
+    {# Boutons d'action #}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ path('app_person_index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Retour à la liste
+                        </a>
+                        <button class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-1"></i> {{ button_label|default('Enregistrer') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{{ form_end(form) }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation pour les boutons de sexe
+    const genderLabels = document.querySelectorAll('.gender-choice label');
+    
+    genderLabels.forEach(label => {
+        label.addEventListener('click', function() {
+            // Ajouter une petite animation de "pulse"
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+        });
+    });
+    
+    // Effet de survol amélioré
+    genderLabels.forEach(label => {
+        label.addEventListener('mouseenter', function() {
+            const icon = this.querySelector('i');
+            if (icon) {
+                icon.style.transform = 'scale(1.2) rotate(5deg)';
+            }
+        });
+        
+        label.addEventListener('mouseleave', function() {
+            const icon = this.querySelector('i');
+            if (icon && !this.previousElementSibling.checked) {
+                icon.style.transform = 'scale(1)';
+            }
+        });
+    });
+});
+</script> 

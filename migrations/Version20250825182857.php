@@ -1,0 +1,71 @@
+<?php
+
+declare(strict_types=1);
+
+namespace DoctrineMigrations;
+
+use Doctrine\DBAL\Schema\Schema;
+use Doctrine\Migrations\AbstractMigration;
+
+/**
+ * Auto-generated Migration: Please modify to your needs!
+ */
+final class Version20250825182857 extends AbstractMigration
+{
+    public function getDescription(): string
+    {
+        return '';
+    }
+
+    public function up(Schema $schema): void
+    {
+        // this up() migration is auto-generated, please modify it to your needs
+        $this->addSql(<<<'SQL'
+            CREATE TEMPORARY TABLE __temp__person AS SELECT id, first_name, last_name, birth_date, death_date, birth_place, death_place, biography, father_id, mother_id, photo, gender, generation FROM person
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE person
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE TABLE person (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, pere_id INTEGER DEFAULT NULL, mere_id INTEGER DEFAULT NULL, biographie CLOB DEFAULT NULL, photo VARCHAR(255) DEFAULT NULL, generation INTEGER DEFAULT NULL, prenom VARCHAR(255) NOT NULL, nom VARCHAR(255) NOT NULL, date_naissance DATE DEFAULT NULL, date_deces DATE DEFAULT NULL, lieu_naissance VARCHAR(255) DEFAULT NULL, lieu_deces VARCHAR(255) DEFAULT NULL, sexe VARCHAR(255) DEFAULT NULL, CONSTRAINT FK_34DCD1763FD73900 FOREIGN KEY (pere_id) REFERENCES person (id) NOT DEFERRABLE INITIALLY IMMEDIATE, CONSTRAINT FK_34DCD17639DEC40E FOREIGN KEY (mere_id) REFERENCES person (id) NOT DEFERRABLE INITIALLY IMMEDIATE)
+        SQL);
+        $this->addSql(<<<'SQL'
+            INSERT INTO person (id, prenom, nom, date_naissance, date_deces, lieu_naissance, lieu_deces, biographie, pere_id, mere_id, photo, sexe, generation) SELECT id, first_name, last_name, birth_date, death_date, birth_place, death_place, biography, father_id, mother_id, photo, gender, generation FROM __temp__person
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE __temp__person
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE INDEX IDX_34DCD1763FD73900 ON person (pere_id)
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE INDEX IDX_34DCD17639DEC40E ON person (mere_id)
+        SQL);
+    }
+
+    public function down(Schema $schema): void
+    {
+        // this down() migration is auto-generated, please modify it to your needs
+        $this->addSql(<<<'SQL'
+            CREATE TEMPORARY TABLE __temp__person AS SELECT id, prenom, nom, date_naissance, date_deces, lieu_naissance, lieu_deces, biographie, pere_id, mere_id, photo, sexe, generation FROM person
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE person
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE TABLE person (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, father_id INTEGER DEFAULT NULL, mother_id INTEGER DEFAULT NULL, biography CLOB DEFAULT NULL, photo VARCHAR(255) DEFAULT NULL, generation INTEGER DEFAULT NULL, first_name VARCHAR(255) NOT NULL, last_name VARCHAR(255) NOT NULL, birth_date DATE DEFAULT NULL, death_date DATE DEFAULT NULL, birth_place VARCHAR(255) DEFAULT NULL, death_place VARCHAR(255) DEFAULT NULL, gender VARCHAR(255) DEFAULT NULL, CONSTRAINT FK_34DCD1762055B9A2 FOREIGN KEY (father_id) REFERENCES person (id) ON UPDATE NO ACTION ON DELETE NO ACTION NOT DEFERRABLE INITIALLY IMMEDIATE, CONSTRAINT FK_34DCD176B78A354D FOREIGN KEY (mother_id) REFERENCES person (id) ON UPDATE NO ACTION ON DELETE NO ACTION NOT DEFERRABLE INITIALLY IMMEDIATE)
+        SQL);
+        $this->addSql(<<<'SQL'
+            INSERT INTO person (id, first_name, last_name, birth_date, death_date, birth_place, death_place, biography, father_id, mother_id, photo, gender, generation) SELECT id, prenom, nom, date_naissance, date_deces, lieu_naissance, lieu_deces, biographie, pere_id, mere_id, photo, sexe, generation FROM __temp__person
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE __temp__person
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE INDEX IDX_34DCD176B78A354D ON person (mother_id)
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE INDEX IDX_34DCD1762055B9A2 ON person (father_id)
+        SQL);
+    }
+}

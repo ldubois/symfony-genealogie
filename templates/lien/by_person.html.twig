@@ -1,0 +1,83 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liens de {{ person.fullName }}{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Liens familiaux de {{ person.fullName }}</h1>
+        <div class="btn-group">
+            <a href="{{ path('app_lien_new') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nouveau lien
+            </a>
+            <a href="{{ path('app_person_show', {'id': person.id}) }}" class="btn btn-secondary">
+                <i class="fas fa-user"></i> Voir le profil
+            </a>
+        </div>
+    </div>
+
+    {% if liens|length > 0 %}
+        <div class="row">
+            {% for lien in liens %}
+                {% set autrePersoine = lien.getAutrePersonne(person) %}
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-3 text-center">
+                                    {% if autrePersoine.photo %}
+                                        <img src="{{ autrePersoine.photo }}" class="rounded-circle" 
+                                             alt="{{ autrePersoine.fullName }}" style="width: 60px; height: 60px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" 
+                                             style="width: 60px; height: 60px;">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-9">
+                                    <h6 class="card-title mb-1">{{ autrePersoine.fullName }}</h6>
+                                    <p class="card-text mb-1">
+                                        <span class="badge bg-primary">{{ lien.typeLien.nom }}</span>
+                                        {% if lien.typeLien.estBiologique %}
+                                            <small class="text-muted">(biologique)</small>
+                                        {% endif %}
+                                    </p>
+                                    <p class="card-text small text-muted mb-2">
+                                        {% if lien.dateDebut %}
+                                            Depuis {{ lien.dateDebut|date('d/m/Y') }}
+                                        {% endif %}
+                                        {% if lien.dateFin %}
+                                            jusqu'au {{ lien.dateFin|date('d/m/Y') }}
+                                        {% else %}
+                                            {% if lien.dateDebut %} - {% endif %}
+                                            <span class="text-success">Actuel</span>
+                                        {% endif %}
+                                    </p>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ path('app_person_show', {'id': autrePersoine.id}) }}" class="btn btn-outline-primary">
+                                            <i class="fas fa-user"></i>
+                                        </a>
+                                        <a href="{{ path('app_lien_show', {'id': lien.id}) }}" class="btn btn-outline-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ path('app_lien_edit', {'id': lien.id}) }}" class="btn btn-outline-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <h4>Aucun lien familial</h4>
+            <p>{{ person.fullName }} n'a pas encore de liens familiaux enregistrés.</p>
+            <a href="{{ path('app_lien_new') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Créer un nouveau lien
+            </a>
+        </div>
+    {% endif %}
+{% endblock %}

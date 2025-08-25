@@ -1,0 +1,141 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Lien : {{ lien.typeLien.nom }}{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Détails du lien</h1>
+        <div class="btn-group">
+            <a href="{{ path('app_lien_edit', {'id': lien.id}) }}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+            <a href="{{ path('app_lien_index') }}" class="btn btn-secondary">
+                <i class="fas fa-list"></i> Retour à la liste
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        {% if lien.personne1.photo %}
+                                            <img src="{{ lien.personne1.photo }}" class="rounded-circle mb-2" 
+                                                 alt="{{ lien.personne1.fullName }}" style="width: 80px; height: 80px; object-fit: cover;">
+                                        {% endif %}
+                                        <h5>{{ lien.personne1.fullName }}</h5>
+                                        <a href="{{ path('app_person_show', {'id': lien.personne1.id}) }}" class="btn btn-sm btn-outline-primary">
+                                            Voir le profil
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <div class="my-3">
+                                    <span class="badge bg-primary fs-6 p-3">{{ lien.typeLien.nom }}</span>
+                                    {% if lien.typeLien.estBiologique %}
+                                        <br><small class="text-muted mt-2">Relation biologique</small>
+                                    {% endif %}
+                                    {% if lien.typeLien.estParental %}
+                                        <br><small class="text-info mt-1">Relation parentale</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        {% if lien.personne2.photo %}
+                                            <img src="{{ lien.personne2.photo }}" class="rounded-circle mb-2" 
+                                                 alt="{{ lien.personne2.fullName }}" style="width: 80px; height: 80px; object-fit: cover;">
+                                        {% endif %}
+                                        <h5>{{ lien.personne2.fullName }}</h5>
+                                        <a href="{{ path('app_person_show', {'id': lien.personne2.id}) }}" class="btn btn-sm btn-outline-primary">
+                                            Voir le profil
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if lien.typeLien.description %}
+                        <div class="alert alert-info">
+                            <strong>Description :</strong> {{ lien.typeLien.description }}
+                        </div>
+                    {% endif %}
+
+                    <dl class="row">
+                        <dt class="col-sm-3">Date de début</dt>
+                        <dd class="col-sm-9">
+                            {% if lien.dateDebut %}
+                                {{ lien.dateDebut|date('d/m/Y') }}
+                            {% else %}
+                                <span class="text-muted">Non spécifiée</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-3">Date de fin</dt>
+                        <dd class="col-sm-9">
+                            {% if lien.dateFin %}
+                                {{ lien.dateFin|date('d/m/Y') }}
+                            {% else %}
+                                <span class="text-success">Relation active</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-3">Statut</dt>
+                        <dd class="col-sm-9">
+                            {% if lien.isActifADate() %}
+                                <span class="badge bg-success">Actif</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactif</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+
+                    {% if lien.notes %}
+                        <div class="mt-4">
+                            <h5>Notes</h5>
+                            <div class="border p-3 rounded bg-light">
+                                {{ lien.notes|nl2br }}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ path('app_lien_edit', {'id': lien.id}) }}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Modifier ce lien
+                        </a>
+                        <a href="{{ path('app_lien_by_person', {'id': lien.personne1.id}) }}" class="btn btn-outline-info">
+                            <i class="fas fa-user"></i> Liens de {{ lien.personne1.firstName }}
+                        </a>
+                        <a href="{{ path('app_lien_by_person', {'id': lien.personne2.id}) }}" class="btn btn-outline-info">
+                            <i class="fas fa-user"></i> Liens de {{ lien.personne2.firstName }}
+                        </a>
+                        <hr>
+                        <form method="post" action="{{ path('app_lien_delete', {'id': lien.id}) }}" 
+                              onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce lien ?')">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ lien.id) }}">
+                            <button class="btn btn-danger w-100">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

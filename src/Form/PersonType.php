@@ -33,13 +33,21 @@ class PersonType extends AbstractType
                     'Homme' => Gender::MALE,
                     'Femme' => Gender::FEMALE
                 ],
-                'placeholder' => 'Sélectionnez le sexe',
-                'required' => false
+                'expanded' => true,
+                'multiple' => false,
+                'required' => false,
+                'attr' => ['class' => 'gender-choice']
             ])
             ->add('birthDate', DateType::class, [
                 'label' => 'Date de naissance',
                 'required' => false,
-                'widget' => 'single_text'
+                'widget' => 'single_text',
+                'html5' => false,
+                'format' => 'dd/MM/yyyy',
+                'attr' => [
+                    'placeholder' => 'jj/mm/aaaa',
+                    'class' => 'form-control flatpickr'
+                ]
             ])
             ->add('birthPlace', TextType::class, [
                 'label' => 'Lieu de naissance',
@@ -49,7 +57,13 @@ class PersonType extends AbstractType
             ->add('deathDate', DateType::class, [
                 'label' => 'Date de décès',
                 'required' => false,
-                'widget' => 'single_text'
+                'widget' => 'single_text',
+                'html5' => false,
+                'format' => 'dd/MM/yyyy',
+                'attr' => [
+                    'placeholder' => 'jj/mm/aaaa',
+                    'class' => 'form-control flatpickr'
+                ]
             ])
             ->add('deathPlace', TextType::class, [
                 'label' => 'Lieu de décès',

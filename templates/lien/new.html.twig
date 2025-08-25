@@ -1,0 +1,77 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveau lien familial{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Nouveau lien familial</h1>
+        <a href="{{ path('app_lien_index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Retour à la liste
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    {{ form_start(form) }}
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form_row(form.personne1) }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form_row(form.personne2) }}
+                            </div>
+                        </div>
+                        
+                        {{ form_row(form.typeLien) }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form_row(form.dateDebut) }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form_row(form.dateFin) }}
+                            </div>
+                        </div>
+                        
+                        {{ form_row(form.notes) }}
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_lien_index') }}" class="btn btn-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Créer le lien
+                            </button>
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Aide</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Types de relations disponibles :</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Biologiques :</strong> Père, Mère</li>
+                        <li><strong>Adoptifs :</strong> Père adoptif, Mère adoptive</li>
+                        <li><strong>Alliance :</strong> Beau-père, Belle-mère</li>
+                        <li><strong>Légaux :</strong> Tuteur, Tutrice</li>
+                        <li><strong>Spirituels :</strong> Parrain, Marraine</li>
+                        <li><strong>Conjugaux :</strong> Conjoint, Compagnon</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6>Convention :</h6>
+                    <p class="small text-muted">
+                        Pour les relations parent-enfant, placez le parent en "Première personne" 
+                        et l'enfant en "Deuxième personne".
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

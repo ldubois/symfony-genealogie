@@ -1,0 +1,86 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Gestion des liens familiaux{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Gestion des liens familiaux</h1>
+        <a href="{{ path('app_lien_new') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouveau lien
+        </a>
+    </div>
+
+    {% if liens|length > 0 %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Personne 1</th>
+                        <th>Type de relation</th>
+                        <th>Personne 2</th>
+                        <th>Période</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lien in liens %}
+                        <tr>
+                            <td>
+                                <a href="{{ path('app_person_show', {'id': lien.personne1.id}) }}">
+                                    {{ lien.personne1.fullName }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ lien.typeLien.nom }}</span>
+                                {% if lien.typeLien.estBiologique %}
+                                    <small class="text-muted">(biologique)</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ path('app_person_show', {'id': lien.personne2.id}) }}">
+                                    {{ lien.personne2.fullName }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if lien.dateDebut %}
+                                    {{ lien.dateDebut|date('d/m/Y') }}
+                                {% else %}
+                                    <span class="text-muted">?</span>
+                                {% endif %}
+                                -
+                                {% if lien.dateFin %}
+                                    {{ lien.dateFin|date('d/m/Y') }}
+                                {% else %}
+                                    <span class="text-success">Actuel</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ path('app_lien_show', {'id': lien.id}) }}" class="btn btn-outline-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ path('app_lien_edit', {'id': lien.id}) }}" class="btn btn-outline-warning">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form method="post" action="{{ path('app_lien_delete', {'id': lien.id}) }}" 
+                                          onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce lien ?')" 
+                                          style="display: inline;">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ lien.id) }}">
+                                        <button class="btn btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <h4>Aucun lien familial enregistré</h4>
+            <p>Commencez par <a href="{{ path('app_lien_new') }}" class="alert-link">créer un nouveau lien</a> entre deux personnes.</p>
+        </div>
+    {% endif %}
+{% endblock %}

@@ -512,35 +512,58 @@ document.addEventListener('DOMContentLoaded', function() {
         let svgContent = '';
         const containerRect = treeContent.getBoundingClientRect();
         
-        // Dessiner les connexions parent-enfant simples d'abord
-        connections.forEach((conn, index) => {
+        // Grouper les connexions parent-enfant par couple de parents
+        const familyGroups = {};
+        
+        connections.forEach(conn => {
             if (conn.type === 'parent-child') {
-                console.log(`Connexion ${index}:`, conn.debug || `${conn.from} -> ${conn.to}`);
-                
-                const fromNode = document.querySelector(`[data-person-id="${conn.from}"]`);
-                const toNode = document.querySelector(`[data-person-id="${conn.to}"]`);
-                
-                console.log(`  Nœuds trouvés: from=${fromNode ? 'OUI' : 'NON'}, to=${toNode ? 'OUI' : 'NON'}`);
-                
-                if (fromNode && toNode) {
-                    const fromRect = fromNode.getBoundingClientRect();
-                    const toRect = toNode.getBoundingClientRect();
+                const childNode = document.querySelector(`[data-person-id="${conn.to}"]`);
+                if (childNode) {
+                    const fatherId = childNode.dataset.fatherId || 'none';
+                    const motherId = childNode.dataset.motherId || 'none';
+                    const familyKey = `${fatherId}-${motherId}`;
                     
-                    const fromX = fromRect.left - containerRect.left + fromRect.width / 2;
-                    const fromY = fromRect.top - containerRect.top + fromRect.height;
-                    const toX = toRect.left - containerRect.left + toRect.width / 2;
-                    const toY = toRect.top - containerRect.top;
+                    if (!familyGroups[familyKey]) {
+                        familyGroups[familyKey] = {
+                            parents: new Set(),
+                            children: new Set(),
+                            parentNodes: [],
+                            childNodes: []
+                        };
+                    }
                     
-                    // Courbe simple pour chaque connexion
-                    const midY = fromY + (toY - fromY) / 2;
+                    // Ajouter les parents
+                    if (fatherId !== 'none') {
+                        const fatherNode = document.querySelector(`[data-person-id="${fatherId}"]`);
+                        if (fatherNode && !familyGroups[familyKey].parents.has(fatherId)) {
+                            familyGroups[familyKey].parents.add(fatherId);
+                            familyGroups[familyKey].parentNodes.push(fatherNode);
+                        }
+                    }
+                    if (motherId !== 'none') {
+                        const motherNode = document.querySelector(`[data-person-id="${motherId}"]`);
+                        if (motherNode && !familyGroups[familyKey].parents.has(motherId)) {
+                            familyGroups[familyKey].parents.add(motherId);
+                            familyGroups[familyKey].parentNodes.push(motherNode);
+                        }
+                    }
                     
-                    svgContent += `
-                        <path d="M ${fromX} ${fromY} 
-                                 Q ${fromX} ${midY} ${(fromX + toX) / 2} ${midY}
-                                 Q ${toX} ${midY} ${toX} ${toY}" 
-                              class="connection-line parent-child" />
-                    `;
+                    // Ajouter l'enfant
+                    if (!familyGroups[familyKey].children.has(conn.to)) {
+                        familyGroups[familyKey].children.add(conn.to);
+                        familyGroups[familyKey].childNodes.push(childNode);
+                    }
                 }
+            }
+        });
+        
+        console.log('Groupes familiaux:', familyGroups);
+        
+        // Dessiner les connexions par famille
+        Object.entries(familyGroups).forEach(([familyKey, family]) => {
+            if (family.parentNodes.length > 0 && family.childNodes.length > 0) {
+                console.log(`Famille ${familyKey}: ${family.parentNodes.length} parents, ${family.childNodes.length} enfants`);
+                svgContent += drawFamilyConnections(family, containerRect);
             }
         });
         
@@ -568,8 +591,129 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        console.log('SVG Content:', svgContent);
+        console.log('SVG Content length:', svgContent.length);
         treeSvg.innerHTML = svgContent;
+    }
+    
+    // Dessiner les connexions pour une famille (système de râteau ou courbe)
+    function drawFamilyConnections(family, containerRect) {
+        let svgContent = '';
+        
+        // Calculer les positions des parents
+        const parentPositions = family.parentNodes.map(parentNode => {
+            const rect = parentNode.getBoundingClientRect();
+            return {
+                x: rect.left - containerRect.left + rect.width / 2,
+                y: rect.top - containerRect.top + rect.height
+            };
+        });
+        
+        // Calculer les positions des enfants
+        const childPositions = family.childNodes.map(childNode => {
+            const rect = childNode.getBoundingClientRect();
+            return {
+                x: rect.left - containerRect.left + rect.width / 2,
+                y: rect.top - containerRect.top
+            };
+        });
+        
+        if (parentPositions.length === 0 || childPositions.length === 0) {
+            return svgContent;
+        }
+        
+        // Point central des parents
+        const parentCenterX = parentPositions.reduce((sum, p) => sum + p.x, 0) / parentPositions.length;
+        const parentCenterY = Math.max(...parentPositions.map(p => p.y));
+        
+        // Si plusieurs parents, ligne horizontale entre eux (plus basse)
+        if (parentPositions.length > 1) {
+            const leftParent = parentPositions.reduce((min, p) => p.x < min.x ? p : min);
+            const rightParent = parentPositions.reduce((max, p) => p.x > max.x ? p : max);
+            const parentRakeY = parentCenterY + 20; // 20px plus bas que le bas des parents
+            
+            svgContent += `
+                <line x1="${leftParent.x}" y1="${parentRakeY}" 
+                      x2="${rightParent.x}" y2="${parentRakeY}" 
+                      class="connection-line parent-child" />
+            `;
+            
+            // Lignes verticales des parents vers leur râteau
+            parentPositions.forEach(parent => {
+                svgContent += `
+                    <line x1="${parent.x}" y1="${parent.y}" 
+                          x2="${parent.x}" y2="${parentRakeY}" 
+                          class="connection-line parent-child" />
+                `;
+            });
+        }
+        
+        // Si un seul enfant, faire une connexion en courbe
+        if (childPositions.length === 1) {
+            const child = childPositions[0];
+            
+            // Point de départ pour la ligne (même logique que pour plusieurs enfants)
+            let startY = parentCenterY;
+            if (parentPositions.length > 1) {
+                // Si plusieurs parents, partir du râteau des parents
+                startY = parentCenterY + 20;
+            }
+            
+            const midY = startY + (child.y - startY) / 2;
+            
+            svgContent += `
+                <path d="M ${parentCenterX} ${startY} 
+                         Q ${parentCenterX} ${midY} ${(parentCenterX + child.x) / 2} ${midY}
+                         Q ${child.x} ${midY} ${child.x} ${child.y}" 
+                      class="connection-line parent-child" />
+            `;
+        } else {
+            // Plusieurs enfants : système de râteau
+            console.log(`Râteau pour ${childPositions.length} enfants`);
+            
+            // Hauteur du râteau des enfants (point de jonction)
+            const childRakeY = parentCenterY + (Math.min(...childPositions.map(c => c.y)) - parentCenterY) * 0.6;
+            
+            // Calculer les positions des enfants pour le râteau
+            const leftChild = childPositions.reduce((min, c) => c.x < min.x ? c : min);
+            const rightChild = childPositions.reduce((max, c) => c.x > max.x ? c : max);
+            const childCenterX = (leftChild.x + rightChild.x) / 2;
+            
+            // Point de départ pour la ligne verticale centrale
+            let startY = parentCenterY;
+            if (parentPositions.length > 1) {
+                // Si plusieurs parents, partir du râteau des parents
+                startY = parentCenterY + 20;
+            }
+            
+            // Ligne centrale courbée (du râteau des parents vers le râteau des enfants)
+            const horizontalOffset = Math.abs(parentCenterX - childCenterX);
+            const curveIntensity = Math.max(30, horizontalOffset * 0.5); // Courbe plus prononcée
+            const midY = startY + (childRakeY - startY) / 2;
+            const curveX = parentCenterX + (childCenterX - parentCenterX) / 2 + (parentCenterX < childCenterX ? curveIntensity : -curveIntensity);
+            
+            svgContent += `
+                <path d="M ${parentCenterX} ${startY} 
+                         Q ${curveX} ${midY} ${childCenterX} ${childRakeY}" 
+                      class="connection-line parent-child" />
+            `;
+            
+            svgContent += `
+                <line x1="${leftChild.x}" y1="${childRakeY}" 
+                      x2="${rightChild.x}" y2="${childRakeY}" 
+                      class="connection-line parent-child" />
+            `;
+            
+            // Lignes verticales vers chaque enfant
+            childPositions.forEach(child => {
+                svgContent += `
+                    <line x1="${child.x}" y1="${childRakeY}" 
+                          x2="${child.x}" y2="${child.y}" 
+                          class="connection-line parent-child" />
+                `;
+            });
+        }
+        
+        return svgContent;
     }
     
 

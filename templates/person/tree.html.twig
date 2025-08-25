@@ -169,6 +169,97 @@
             }
         }
         
+        /* Section des liens */
+        .links-section {
+            margin-top: 60px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .link-card {
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .link-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: #007bff;
+        }
+        
+        .link-type-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .link-type-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #6c757d;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .linked-person-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .link-dates {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+        
+        .link-card .person-link {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        
+        /* Couleurs spécifiques par type de lien */
+        .link-card[data-type="conjoint"] { border-color: #28a745; }
+        .link-card[data-type="conjoint"]:hover { border-color: #1e7e34; }
+        .link-card[data-type="conjoint"] .link-type-icon { color: #28a745; }
+        
+        .link-card[data-type="ex-conjoint"] { border-color: #dc3545; }
+        .link-card[data-type="ex-conjoint"]:hover { border-color: #c82333; }
+        .link-card[data-type="ex-conjoint"] .link-type-icon { color: #dc3545; }
+        
+        .link-card[data-type="séparé"] { border-color: #ffc107; }
+        .link-card[data-type="séparé"]:hover { border-color: #e0a800; }
+        .link-card[data-type="séparé"] .link-type-icon { color: #ffc107; }
+        
+        .link-card[data-type="compagnon"] { border-color: #17a2b8; }
+        .link-card[data-type="compagnon"]:hover { border-color: #138496; }
+        .link-card[data-type="compagnon"] .link-type-icon { color: #17a2b8; }
+        
+        .link-card[data-type="parrain"] { border-color: #6f42c1; }
+        .link-card[data-type="parrain"]:hover { border-color: #5a32a3; }
+        .link-card[data-type="parrain"] .link-type-icon { color: #6f42c1; }
+        
+        .link-card[data-type="marraine"] { border-color: #e83e8c; }
+        .link-card[data-type="marraine"]:hover { border-color: #d91a72; }
+        .link-card[data-type="marraine"] .link-type-icon { color: #e83e8c; }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .tree-level {
@@ -179,6 +270,10 @@
             
             .person-card {
                 width: 250px;
+            }
+            
+            .links-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -248,7 +343,7 @@
                 </div>
             {% endif %}
 
-            {# Personne actuelle et frères/sœurs #}
+            {# Personne actuelle, frères/sœurs et liens #}
             <div class="tree-level" data-level="current">
                 {% if person.siblings|length > 0 %}
                     {% for sibling in person.siblings %}
@@ -271,6 +366,7 @@
                         </div>
                     {% endfor %}
                 {% endif %}
+                
                 <div class="person-card current" data-person="current">
                     {% if person.photo %}
                         <img src="{{ person.photo }}" alt="{{ person.fullName }}" class="person-photo">
@@ -288,6 +384,63 @@
                     {% endif %}
                     <a href="{{ path('app_person_show', {'id': person.id}) }}" class="person-link">Voir les détails</a>
                 </div>
+                
+                {# Liens de la table Lien au même niveau #}
+                {% set liens = person.tousLesLiens %}
+                {% if liens|length > 0 %}
+                    {% for lien in liens %}
+                        {% set autrePerson = lien.getAutrePersonne(person) %}
+                        {% set typeLienNom = lien.typeLien.nom|lower %}
+                        <div class="person-card" data-person="link" data-type="{{ typeLienNom }}">
+                            {# Icône selon le type de lien en haut à droite #}
+                            <div style="position: absolute; top: 10px; right: 10px; font-size: 1.5rem;">
+                                {% if typeLienNom == 'conjoint' %}
+                                    💖
+                                {% elseif typeLienNom == 'ex-conjoint' %}
+                                    💔
+                                {% elseif typeLienNom == 'séparé' %}
+                                    ⏸️
+                                {% elseif typeLienNom == 'compagnon' %}
+                                    🤝
+                                {% elseif typeLienNom == 'parrain' %}
+                                    ✝️
+                                {% elseif typeLienNom == 'marraine' %}
+                                    ✝️
+                                {% elseif 'père' in typeLienNom or 'beau-père' in typeLienNom %}
+                                    👨
+                                {% elseif 'mère' in typeLienNom or 'belle-mère' in typeLienNom %}
+                                    👩
+                                {% elseif 'tuteur' in typeLienNom %}
+                                    🛡️
+                                {% else %}
+                                    👥
+                                {% endif %}
+                            </div>
+                            
+                            {% if autrePerson.photo %}
+                                <img src="{{ autrePerson.photo }}" alt="{{ autrePerson.fullName }}" class="person-photo">
+                            {% else %}
+                                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjY2NjYyI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MyLjY3IDAgNC44NCAyLjE3IDQuODQgNC44NCAwIDIuNjctMi4xNyA0Ljg0LTQuODQgNC44NC0yLjY3IDAtNC44NC0yLjE3LTQuODQtNC44NCAwLTIuNjcgMi4xNy00Ljg0IDQuODQtNC44NHptMCAxMmM0LjQyIDAgOC4xNy0yLjI4IDkuNTQtNS41NS0yLjY5LTMuMTktNi41My01LjA1LTEwLjg2LTUuMDUtNC4zMyAwLTguMTcgMS44Ni0xMC44NiA1LjA1IDEuMzcgMy4yNyA1LjEyIDUuNTUgOS41NCA1LjU1eiIvPjwvc3ZnPg==" alt="Photo par défaut" class="person-photo">
+                            {% endif %}
+                            
+                            <div class="person-name">{{ autrePerson.fullName }}</div>
+                            <div class="person-dates" style="color: #007bff; font-weight: 600; font-size: 0.8rem; text-transform: uppercase;">
+                                {{ lien.typeLien.nom }}
+                            </div>
+                            
+                            {% if autrePerson.birthDate %}
+                                <div class="person-dates">
+                                    {{ autrePerson.birthDate|date('d/m/Y') }}
+                                    {% if autrePerson.deathDate %}
+                                        - {{ autrePerson.deathDate|date('d/m/Y') }}
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            
+                            <a href="{{ path('app_person_show', {'id': autrePerson.id}) }}" class="person-link">Voir les détails</a>
+                        </div>
+                    {% endfor %}
+                {% endif %}
             </div>
 
             {# Enfants #}
@@ -315,6 +468,7 @@
                 </div>
             {% endif %}
         </div>
+
     </div>
 
     <script>
@@ -355,12 +509,32 @@
                 });
             }
             
-            // Connexions personne actuelle -> enfants
+            // Connexions vers les enfants - avec gestion des parents multiples
             const childrenLevel = document.querySelector('[data-level="children"]');
-            if (currentPerson && childrenLevel) {
+            if (childrenLevel) {
                 const children = childrenLevel.querySelectorAll('.person-card');
                 children.forEach(child => {
-                    drawCurvedConnection(svg, currentPerson, child, containerRect);
+                    // Trouver tous les parents potentiels de cet enfant au niveau actuel
+                    const potentialParents = [];
+                    
+                    // Ajouter la personne actuelle
+                    if (currentPerson) {
+                        potentialParents.push(currentPerson);
+                    }
+                    
+                    // Chercher les ex-conjoints, conjoints, séparés qui pourraient être l'autre parent
+                    const linkedPersons = currentLevel.querySelectorAll('[data-person="link"]');
+                    linkedPersons.forEach(linkedPerson => {
+                        const linkType = linkedPerson.getAttribute('data-type');
+                        if (linkType === 'conjoint' || linkType === 'ex-conjoint' || linkType === 'séparé' || linkType === 'compagnon') {
+                            potentialParents.push(linkedPerson);
+                        }
+                    });
+                    
+                    // Dessiner les connexions depuis tous les parents potentiels
+                    potentialParents.forEach(parent => {
+                        drawCurvedConnection(svg, parent, child, containerRect);
+                    });
                 });
             }
             
@@ -372,6 +546,17 @@
                     const allSiblings = [...siblings, currentPerson];
                     drawSiblingsConnection(svg, allSiblings, containerRect);
                 }
+            }
+            
+            // Connexions horizontales entre conjoints/ex-conjoints (ligne de relation)
+            if (currentLevel && currentPerson) {
+                const linkedPersons = currentLevel.querySelectorAll('[data-person="link"]');
+                linkedPersons.forEach(linkedPerson => {
+                    const linkType = linkedPerson.getAttribute('data-type');
+                    if (linkType === 'conjoint' || linkType === 'ex-conjoint' || linkType === 'séparé' || linkType === 'compagnon') {
+                        drawRelationshipConnection(svg, currentPerson, linkedPerson, containerRect, linkType);
+                    }
+                });
             }
         }
 
@@ -432,6 +617,50 @@
                 
                 svg.appendChild(verticalLine);
             });
+        }
+
+        function drawRelationshipConnection(svg, person1, person2, containerRect, linkType) {
+            const rect1 = person1.getBoundingClientRect();
+            const rect2 = person2.getBoundingClientRect();
+            
+            const x1 = rect1.left + rect1.width / 2 - containerRect.left;
+            const y1 = rect1.top + rect1.height / 2 - containerRect.top;
+            const x2 = rect2.left + rect2.width / 2 - containerRect.left;
+            const y2 = rect2.top + rect2.height / 2 - containerRect.top;
+            
+            // Ligne de relation horizontale
+            const relationLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            relationLine.setAttribute('x1', x1);
+            relationLine.setAttribute('y1', y1);
+            relationLine.setAttribute('x2', x2);
+            relationLine.setAttribute('y2', y2);
+            relationLine.setAttribute('class', 'connection-path');
+            
+            // Style selon le type de relation
+            switch(linkType) {
+                case 'conjoint':
+                    relationLine.setAttribute('stroke', '#28a745');
+                    relationLine.setAttribute('stroke-width', '4');
+                    break;
+                case 'ex-conjoint':
+                    relationLine.setAttribute('stroke', '#dc3545');
+                    relationLine.setAttribute('stroke-width', '3');
+                    relationLine.setAttribute('stroke-dasharray', '10,5');
+                    break;
+                case 'séparé':
+                    relationLine.setAttribute('stroke', '#ffc107');
+                    relationLine.setAttribute('stroke-width', '3');
+                    relationLine.setAttribute('stroke-dasharray', '5,5');
+                    break;
+                case 'compagnon':
+                    relationLine.setAttribute('stroke', '#17a2b8');
+                    relationLine.setAttribute('stroke-width', '3');
+                    break;
+                default:
+                    relationLine.setAttribute('stroke-width', '2');
+            }
+            
+            svg.appendChild(relationLine);
         }
     </script>
 {% endblock %}

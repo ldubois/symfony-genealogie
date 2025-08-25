@@ -3,7 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\Person;
+use App\Entity\Lien;
 use App\Form\PersonType;
+use App\Form\QuickLienType;
 use App\Repository\PersonRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -62,6 +64,14 @@ class PersonController extends AbstractController
         $form = $this->createForm(PersonType::class, $person);
         $form->handleRequest($request);
 
+        // Formulaire d'ajout rapide de lien
+        $quickLien = new Lien();
+        $quickLien->setPersonne1($person);
+        $quickLienForm = $this->createForm(QuickLienType::class, $quickLien, [
+            'exclude_person' => $person
+        ]);
+        $quickLienForm->handleRequest($request);
+
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->flush();
 
@@ -69,9 +79,18 @@ class PersonController extends AbstractController
             return $this->redirectToRoute('app_person_show', ['id' => $person->getId()], Response::HTTP_SEE_OTHER);
         }
 
+        if ($quickLienForm->isSubmitted() && $quickLienForm->isValid()) {
+            $entityManager->persist($quickLien);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'Le lien a été ajouté avec succès.');
+            return $this->redirectToRoute('app_person_edit', ['id' => $person->getId()], Response::HTTP_SEE_OTHER);
+        }
+
         return $this->render('person/edit.html.twig', [
             'person' => $person,
             'form' => $form,
+            'quickLienForm' => $quickLienForm,
         ]);
     }
 

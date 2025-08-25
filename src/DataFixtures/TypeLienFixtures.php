@@ -82,6 +82,18 @@ class TypeLienFixtures extends Fixture
                 'description' => 'Compagnon/Compagne (union libre)',
                 'estBiologique' => false,
                 'estParental' => false
+            ],
+            [
+                'nom' => 'Ex-conjoint',
+                'description' => 'Ancien époux/épouse (divorcé)',
+                'estBiologique' => false,
+                'estParental' => false
+            ],
+            [
+                'nom' => 'Séparé',
+                'description' => 'Conjoint séparé (non divorcé)',
+                'estBiologique' => false,
+                'estParental' => false
             ]
         ];
 

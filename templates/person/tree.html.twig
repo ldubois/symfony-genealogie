@@ -385,10 +385,31 @@
                     <a href="{{ path('app_person_show', {'id': person.id}) }}" class="person-link">Voir les détails</a>
                 </div>
                 
-                {# Liens de la table Lien au même niveau #}
+                {# Liens de la table Lien au même niveau - triés par priorité #}
                 {% set liens = person.tousLesLiens %}
                 {% if liens|length > 0 %}
+                    {# Trier les liens par ordre de priorité : conjoints/compagnons d'abord #}
+                    {% set liensOrdonnes = [] %}
+                    {% set prioriteOrdre = ['conjoint', 'compagnon', 'ex-conjoint', 'séparé', 'parrain', 'marraine', 'père', 'mère', 'beau-père', 'belle-mère', 'tuteur', 'tutrice'] %}
+                    
+                    {# Grouper les liens par type #}
+                    {% for priorite in prioriteOrdre %}
+                        {% for lien in liens %}
+                            {% if lien.typeLien.nom|lower == priorite %}
+                                {% set liensOrdonnes = liensOrdonnes|merge([lien]) %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                    
+                    {# Ajouter les liens restants qui ne sont pas dans la liste de priorité #}
                     {% for lien in liens %}
+                        {% set typeLienNom = lien.typeLien.nom|lower %}
+                        {% if typeLienNom not in prioriteOrdre %}
+                            {% set liensOrdonnes = liensOrdonnes|merge([lien]) %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% for lien in liensOrdonnes %}
                         {% set autrePerson = lien.getAutrePersonne(person) %}
                         {% set typeLienNom = lien.typeLien.nom|lower %}
                         <div class="person-card" data-person="link" data-type="{{ typeLienNom }}">
@@ -522,17 +543,30 @@
                         potentialParents.push(currentPerson);
                     }
                     
-                    // Chercher les ex-conjoints, conjoints, séparés qui pourraient être l'autre parent
+                    // Chercher les ex-conjoints, conjoints, séparés qui pourraient être l'autre parent biologique
                     const linkedPersons = currentLevel.querySelectorAll('[data-person="link"]');
+                    console.log('Personnes liées trouvées:', linkedPersons.length);
                     linkedPersons.forEach(linkedPerson => {
                         const linkType = linkedPerson.getAttribute('data-type');
-                        if (linkType === 'conjoint' || linkType === 'ex-conjoint' || linkType === 'séparé' || linkType === 'compagnon') {
+                        const personName = linkedPerson.querySelector('.person-name')?.textContent;
+                        console.log('Personne liée:', personName, 'Type:', linkType);
+                        
+                        // Seuls les ex-conjoints et séparés peuvent être parents biologiques
+                        // Les conjoints actuels et compagnons ne sont PAS automatiquement parents des enfants existants
+                        if (linkType === 'ex-conjoint' || linkType === 'séparé') {
                             potentialParents.push(linkedPerson);
+                            console.log('Ajouté comme parent potentiel (ex-relation):', personName);
+                        } else {
+                            console.log('NON ajouté comme parent (relation actuelle ou autre):', personName, linkType);
                         }
+                        // Note: Les beaux-parents ne sont PAS automatiquement connectés aux enfants
+                        // car ils ne sont pas forcément les beaux-parents des enfants
                     });
                     
-                    // Dessiner les connexions depuis tous les parents potentiels
+                    // Dessiner les connexions depuis tous les parents biologiques/adoptifs
+                    console.log('Parents potentiels pour enfant:', potentialParents.length);
                     potentialParents.forEach(parent => {
+                        console.log('Connexion parent vers enfant:', parent.querySelector('.person-name')?.textContent);
                         drawCurvedConnection(svg, parent, child, containerRect);
                     });
                 });
@@ -553,9 +587,12 @@
                 const linkedPersons = currentLevel.querySelectorAll('[data-person="link"]');
                 linkedPersons.forEach(linkedPerson => {
                     const linkType = linkedPerson.getAttribute('data-type');
+                    // Seules les relations conjugales ont des connexions horizontales
                     if (linkType === 'conjoint' || linkType === 'ex-conjoint' || linkType === 'séparé' || linkType === 'compagnon') {
                         drawRelationshipConnection(svg, currentPerson, linkedPerson, containerRect, linkType);
                     }
+                    // Les beaux-parents n'ont PAS de connexion horizontale avec la personne actuelle
+                    // car ils sont liés au père/mère, pas directement à la personne
                 });
             }
         }
@@ -662,5 +699,7 @@
             
             svg.appendChild(relationLine);
         }
+
+
     </script>
 {% endblock %}

@@ -507,42 +507,72 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        let svgContent = '';
+        console.log('Drawing connections...', connections);
         
-        connections.forEach(conn => {
-            const fromNode = document.querySelector(`[data-person-id="${conn.from}"]`);
-            const toNode = document.querySelector(`[data-person-id="${conn.to}"]`);
-            
-            if (fromNode && toNode) {
-                const fromRect = fromNode.getBoundingClientRect();
-                const toRect = toNode.getBoundingClientRect();
-                const containerRect = treeContent.getBoundingClientRect();
+        let svgContent = '';
+        const containerRect = treeContent.getBoundingClientRect();
+        
+        // Dessiner les connexions parent-enfant simples d'abord
+        connections.forEach((conn, index) => {
+            if (conn.type === 'parent-child') {
+                console.log(`Connexion ${index}:`, conn.debug || `${conn.from} -> ${conn.to}`);
                 
-                const fromX = fromRect.left - containerRect.left + fromRect.width / 2;
-                const fromY = fromRect.top - containerRect.top + fromRect.height;
-                const toX = toRect.left - containerRect.left + toRect.width / 2;
-                const toY = toRect.top - containerRect.top;
+                const fromNode = document.querySelector(`[data-person-id="${conn.from}"]`);
+                const toNode = document.querySelector(`[data-person-id="${conn.to}"]`);
                 
-                if (conn.type === 'parent-child') {
-                    const midY = (fromY + toY) / 2;
+                console.log(`  Nœuds trouvés: from=${fromNode ? 'OUI' : 'NON'}, to=${toNode ? 'OUI' : 'NON'}`);
+                
+                if (fromNode && toNode) {
+                    const fromRect = fromNode.getBoundingClientRect();
+                    const toRect = toNode.getBoundingClientRect();
+                    
+                    const fromX = fromRect.left - containerRect.left + fromRect.width / 2;
+                    const fromY = fromRect.top - containerRect.top + fromRect.height;
+                    const toX = toRect.left - containerRect.left + toRect.width / 2;
+                    const toY = toRect.top - containerRect.top;
+                    
+                    // Courbe simple pour chaque connexion
+                    const midY = fromY + (toY - fromY) / 2;
+                    
                     svgContent += `
                         <path d="M ${fromX} ${fromY} 
                                  Q ${fromX} ${midY} ${(fromX + toX) / 2} ${midY}
                                  Q ${toX} ${midY} ${toX} ${toY}" 
                               class="connection-line parent-child" />
                     `;
-                } else if (conn.type === 'conjugal') {
+                }
+            }
+        });
+        
+        // Dessiner les connexions conjugales
+        connections.forEach(conn => {
+            if (conn.type === 'conjugal') {
+                const fromNode = document.querySelector(`[data-person-id="${conn.from}"]`);
+                const toNode = document.querySelector(`[data-person-id="${conn.to}"]`);
+                
+                if (fromNode && toNode) {
+                    const fromRect = fromNode.getBoundingClientRect();
+                    const toRect = toNode.getBoundingClientRect();
+                    
+                    const fromX = fromRect.left - containerRect.left + fromRect.width / 2;
+                    const fromY = fromRect.top - containerRect.top + fromRect.height / 2;
+                    const toX = toRect.left - containerRect.left + toRect.width / 2;
+                    const toY = toRect.top - containerRect.top + toRect.height / 2;
+                    
                     svgContent += `
-                        <line x1="${fromX}" y1="${fromY - fromRect.height/2}" 
-                              x2="${toX}" y2="${toY + toRect.height/2}" 
+                        <line x1="${fromX}" y1="${fromY}" 
+                              x2="${toX}" y2="${toY}" 
                               class="connection-line conjugal" />
                     `;
                 }
             }
         });
         
+        console.log('SVG Content:', svgContent);
         treeSvg.innerHTML = svgContent;
     }
+    
+
     
     // Fonctions de contrôle
     window.centerTree = function() {

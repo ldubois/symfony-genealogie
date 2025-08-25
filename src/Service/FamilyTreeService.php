@@ -99,25 +99,26 @@ class FamilyTreeService
     {
         $connections = [];
         
+        // Parcourir toutes les personnes de toutes les générations
         foreach ($generations as $level => $people) {
-            if (is_numeric($level) && $level > 0) {
-                foreach ($people as $child) {
-                    // Connexions parent-enfant
-                    if ($child->getFather()) {
-                        $connections[] = [
-                            'type' => 'parent-child',
-                            'from' => $child->getFather()->getId(),
-                            'to' => $child->getId()
-                        ];
-                    }
-                    
-                    if ($child->getMother()) {
-                        $connections[] = [
-                            'type' => 'parent-child',
-                            'from' => $child->getMother()->getId(),
-                            'to' => $child->getId()
-                        ];
-                    }
+            foreach ($people as $child) {
+                // Connexions parent-enfant (pour tous les niveaux)
+                if ($child->getFather()) {
+                    $connections[] = [
+                        'type' => 'parent-child',
+                        'from' => $child->getFather()->getId(),
+                        'to' => $child->getId(),
+                        'debug' => "Père {$child->getFather()->getFirstName()} -> {$child->getFirstName()} (niveau $level)"
+                    ];
+                }
+                
+                if ($child->getMother()) {
+                    $connections[] = [
+                        'type' => 'parent-child',
+                        'from' => $child->getMother()->getId(),
+                        'to' => $child->getId(),
+                        'debug' => "Mère {$child->getMother()->getFirstName()} -> {$child->getFirstName()} (niveau $level)"
+                    ];
                 }
             }
         }

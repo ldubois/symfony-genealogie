@@ -27,6 +27,11 @@ class PersonType extends AbstractType
                 'label' => 'Nom',
                 'attr' => ['placeholder' => 'Entrez le nom']
             ])
+            ->add('nickname', TextType::class, [
+                'label' => 'Surnom',
+                'required' => false,
+                'attr' => ['placeholder' => 'Entrez le surnom (optionnel)']
+            ])
             ->add('gender', ChoiceType::class, [
                 'label' => 'Sexe',
                 'choices' => [

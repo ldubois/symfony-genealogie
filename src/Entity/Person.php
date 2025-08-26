@@ -30,6 +30,9 @@ class Person
     #[Assert\NotBlank]
     private ?string $lastName = null;
 
+    #[ORM\Column(name: 'surnom', length: 255, nullable: true)]
+    private ?string $nickname = null;
+
     #[ORM\Column(name: 'date_naissance', type: 'date', nullable: true)]
     private ?\DateTimeInterface $birthDate = null;
 
@@ -110,6 +113,17 @@ class Person
     public function setLastName(string $lastName): static
     {
         $this->lastName = $lastName;
+        return $this;
+    }
+
+    public function getNickname(): ?string
+    {
+        return $this->nickname;
+    }
+
+    public function setNickname(?string $nickname): static
+    {
+        $this->nickname = $nickname;
         return $this;
     }
 
@@ -225,7 +239,11 @@ class Person
 
     public function getFullName(): string
     {
-        return $this->firstName . ' ' . $this->lastName;
+        $name = $this->firstName . ' ' . $this->lastName;
+        if ($this->nickname) {
+            $name .= ' "' . $this->nickname . '"';
+        }
+        return $name;
     }
 
     public function getChildren(): Collection

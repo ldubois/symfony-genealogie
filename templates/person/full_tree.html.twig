@@ -52,27 +52,25 @@
         .tree-svg-container {
             position: relative;
             width: 100%;
-            min-height: 800px;
+            height: 80vh;
             background: white;
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            overflow: hidden;
+            overflow: auto;
         }
         
         .tree-svg {
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
             z-index: 1;
+            pointer-events: none;
         }
         
         .tree-content {
             position: relative;
             z-index: 2;
             padding: 40px;
-            min-width: 1200px;
         }
         
         .generation {
@@ -286,19 +284,16 @@
         <p class="text-muted">Visualisation complète des relations familiales</p>
         
         <div class="tree-stats">
-            {% set totalPeople = 0 %}
+            {% set totalPeople = treeData.positionedPeople|length %}
             {% set totalMen = 0 %}
             {% set totalWomen = 0 %}
             
-            {% for level, people in generations %}
-                {% for person in people %}
-                    {% set totalPeople = totalPeople + 1 %}
-                    {% if person.gender and person.gender.value == 'homme' %}
-                        {% set totalMen = totalMen + 1 %}
-                    {% else %}
-                        {% set totalWomen = totalWomen + 1 %}
-                    {% endif %}
-                {% endfor %}
+            {% for personId, personData in treeData.positionedPeople %}
+                {% if personData.person.gender == 'homme' %}
+                    {% set totalMen = totalMen + 1 %}
+                {% elseif personData.person.gender == 'femme' %}
+                    {% set totalWomen = totalWomen + 1 %}
+                {% endif %}
             {% endfor %}
             
             <div class="stat-item">
@@ -341,129 +336,53 @@
         </svg>
         
         <div class="tree-content" id="treeContent">
-            <!-- Afficher les générations (des plus vieux vers les plus jeunes) -->
-            {% for level in generations|keys|sort|reverse %}
-                {% if level != 'isolated' %}
-                    <div class="generation" data-level="{{ level }}">
-                        <div class="generation-label">Génération {{ level + 1 }}</div>
-                        
-                        {% for person in generations[level] %}
-                            {% set genderClass = person.gender ? (person.gender.value == 'homme' ? 'male' : 'female') : 'unknown' %}
-                            <div class="person-node {{ genderClass }}" 
-                                 data-person-id="{{ person.id }}" 
-                                 data-level="{{ level }}"
-                                 data-name="{{ person.fullName|lower }}"
-                                 data-father-id="{{ person.father ? person.father.id : '' }}"
-                                 data-mother-id="{{ person.mother ? person.mother.id : '' }}">
-                                
-                                <div class="person-avatar {{ genderClass }}">
-                                    {% if person.gender and person.gender.value == 'homme' %}
-                                        👨
-                                    {% else %}
-                                        👩
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="person-name">{{ person.fullName }}</div>
-                                
-                                <div class="person-dates">
-                                    {% if person.birthDate %}
-                                        <div><i class="fas fa-birthday-cake"></i> {{ person.birthDate|date('d/m/Y') }}</div>
-                                    {% endif %}
-                                    {% if person.deathDate %}
-                                        <div><i class="fas fa-cross"></i> {{ person.deathDate|date('d/m/Y') }}</div>
-                                    {% endif %}
-                                </div>
-                                
-                                <!-- Liens conjugaux -->
-                                {% set conjugalLinks = [] %}
-                                {% for lien in person.tousLesLiens %}
-                                    {% if lien.typeLien.nom in ['Conjoint', 'Ex-conjoint', 'Compagnon', 'Séparé'] %}
-                                        {% set conjugalLinks = conjugalLinks|merge([lien]) %}
-                                    {% endif %}
-                                {% endfor %}
-                                
-                                {% if conjugalLinks|length > 0 %}
-                                    <div class="person-links">
-                                        {% for lien in conjugalLinks %}
-                                            {% set otherPerson = lien.autrePersonne(person) %}
-                                            <span class="conjugal-tag {{ lien.typeLien.nom|lower|replace({' ': '-'}) }}">
-                                                {% if lien.typeLien.nom == 'Conjoint' %}💑
-                                                {% elseif lien.typeLien.nom == 'Ex-conjoint' %}💔
-                                                {% elseif lien.typeLien.nom == 'Compagnon' %}💕
-                                                {% elseif lien.typeLien.nom == 'Séparé' %}💔
-                                                {% endif %}
-                                                {{ otherPerson.firstName }}
-                                            </span>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                                
-                                <div class="person-actions">
-                                    <a href="{{ path('app_person_show', {id: person.id}) }}" class="btn btn-primary btn-tree">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{{ path('app_person_tree', {id: person.id}) }}" class="btn btn-success btn-tree">
-                                        <i class="fas fa-sitemap"></i>
-                                    </a>
-                                    <a href="{{ path('app_person_edit', {id: person.id}) }}" class="btn btn-warning btn-tree">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            {% endfor %}
-            
-            <!-- Afficher les personnes isolées s'il y en a -->
-            {% if generations['isolated'] is defined and generations['isolated']|length > 0 %}
-                <div class="generation" data-level="isolated">
-                    <div class="generation-label">Personnes isolées</div>
+            <!-- Les personnes sont positionnées absolument selon les calculs du backend -->
+            {% for personId, personData in treeData.positionedPeople %}
+                {% set person = personData.person %}
+                {% set genderClass = person.gender == 'homme' ? 'male' : (person.gender == 'femme' ? 'female' : 'unknown') %}
+                
+                <div class="person-node {{ genderClass }}" 
+                     data-person-id="{{ person.id }}" 
+                     data-level="{{ personData.level }}"
+                     data-name="{{ person.name|lower }}"
+                     data-x="{{ personData.x }}"
+                     data-y="{{ personData.y }}"
+                     style="position: absolute; 
+                            width: {{ personData.width }}px;
+                            height: {{ personData.height }}px;">
                     
-                    {% for person in generations['isolated'] %}
-                        {% set genderClass = person.gender ? (person.gender.value == 'homme' ? 'male' : 'female') : 'unknown' %}
-                        <div class="person-node {{ genderClass }}" 
-                             data-person-id="{{ person.id }}" 
-                             data-level="isolated"
-                             data-name="{{ person.fullName|lower }}"
-                             data-father-id="{{ person.father ? person.father.id : '' }}"
-                             data-mother-id="{{ person.mother ? person.mother.id : '' }}">
-                            
-                            <div class="person-avatar {{ genderClass }}">
-                                {% if person.gender and person.gender.value == 'homme' %}
-                                    👨
-                                {% else %}
-                                    👩
-                                {% endif %}
-                            </div>
-                            
-                            <div class="person-name">{{ person.fullName }}</div>
-                            
-                            <div class="person-dates">
-                                {% if person.birthDate %}
-                                    <div><i class="fas fa-birthday-cake"></i> {{ person.birthDate|date('d/m/Y') }}</div>
-                                {% endif %}
-                                {% if person.deathDate %}
-                                    <div><i class="fas fa-cross"></i> {{ person.deathDate|date('d/m/Y') }}</div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="person-actions">
-                                <a href="{{ path('app_person_show', {id: person.id}) }}" class="btn btn-primary btn-tree">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ path('app_person_tree', {id: person.id}) }}" class="btn btn-success btn-tree">
-                                    <i class="fas fa-sitemap"></i>
-                                </a>
-                                <a href="{{ path('app_person_edit', {id: person.id}) }}" class="btn btn-warning btn-tree">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                            </div>
-                        </div>
-                    {% endfor %}
+                    <div class="person-avatar {{ genderClass }}">
+                        {% if person.gender == 'homme' %}
+                            👨
+                        {% else %}
+                            👩
+                        {% endif %}
+                    </div>
+                    
+                    <div class="person-name">{{ person.name }}</div>
+                    
+                    <div class="person-dates">
+                        {% if person.birthDate %}
+                            <div><i class="fas fa-birthday-cake"></i> {{ person.birthDate }}</div>
+                        {% endif %}
+                        {% if person.deathDate %}
+                            <div><i class="fas fa-cross"></i> {{ person.deathDate }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="person-actions">
+                        <a href="{{ path('app_person_show', {id: person.id}) }}" class="btn btn-primary btn-tree">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{{ path('app_person_tree', {id: person.id}) }}" class="btn btn-success btn-tree">
+                            <i class="fas fa-sitemap"></i>
+                        </a>
+                        <a href="{{ path('app_person_edit', {id: person.id}) }}" class="btn btn-warning btn-tree">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </div>
                 </div>
-            {% endif %}
+            {% endfor %}
         </div>
     </div>
 </div>
@@ -478,8 +397,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let showConnections = true;
     let zoomLevel = 1;
     
-    // Données de connexion du contrôleur
-    const connections = {{ connections|json_encode|raw }};
+    // Données calculées côté serveur
+    const treeData = {{ treeData|json_encode|raw }};
     
     // Recherche
     searchInput.addEventListener('input', function() {
@@ -500,223 +419,73 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Dessiner les connexions
-    function drawConnections() {
+    // Calculer les dimensions nécessaires pour l'arbre
+    function calculateTreeDimensions() {
+        const people = treeData.positionedPeople || {};
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        
+        // Trouver les limites de l'arbre
+        Object.values(people).forEach(personData => {
+            minX = Math.min(minX, personData.x);
+            maxX = Math.max(maxX, personData.x + personData.width);
+            minY = Math.min(minY, personData.y);
+            maxY = Math.max(maxY, personData.y + personData.height);
+        });
+        
+        // Ajouter de la marge
+        const margin = 100;
+        return {
+            width: maxX - minX + (margin * 2),
+            height: maxY - minY + (margin * 2),
+            offsetX: -minX + margin,
+            offsetY: -minY + margin
+        };
+    }
+    
+    // Rendu simple des chemins SVG calculés côté serveur
+    function renderConnections() {
         if (!showConnections) {
             treeSvg.innerHTML = '';
             return;
         }
         
-        console.log('Drawing connections...', connections);
+        const dimensions = calculateTreeDimensions();
+        
+        // Ajuster la taille du SVG et du conteneur
+        treeSvg.setAttribute('width', dimensions.width);
+        treeSvg.setAttribute('height', dimensions.height);
+        treeContent.style.width = dimensions.width + 'px';
+        treeContent.style.height = dimensions.height + 'px';
         
         let svgContent = '';
-        const containerRect = treeContent.getBoundingClientRect();
+        const svgPaths = treeData.svgPaths || [];
         
-        // Grouper les connexions parent-enfant par couple de parents
-        const familyGroups = {};
-        
-        connections.forEach(conn => {
-            if (conn.type === 'parent-child') {
-                const childNode = document.querySelector(`[data-person-id="${conn.to}"]`);
-                if (childNode) {
-                    const fatherId = childNode.dataset.fatherId || 'none';
-                    const motherId = childNode.dataset.motherId || 'none';
-                    const familyKey = `${fatherId}-${motherId}`;
-                    
-                    if (!familyGroups[familyKey]) {
-                        familyGroups[familyKey] = {
-                            parents: new Set(),
-                            children: new Set(),
-                            parentNodes: [],
-                            childNodes: []
-                        };
-                    }
-                    
-                    // Ajouter les parents
-                    if (fatherId !== 'none') {
-                        const fatherNode = document.querySelector(`[data-person-id="${fatherId}"]`);
-                        if (fatherNode && !familyGroups[familyKey].parents.has(fatherId)) {
-                            familyGroups[familyKey].parents.add(fatherId);
-                            familyGroups[familyKey].parentNodes.push(fatherNode);
-                        }
-                    }
-                    if (motherId !== 'none') {
-                        const motherNode = document.querySelector(`[data-person-id="${motherId}"]`);
-                        if (motherNode && !familyGroups[familyKey].parents.has(motherId)) {
-                            familyGroups[familyKey].parents.add(motherId);
-                            familyGroups[familyKey].parentNodes.push(motherNode);
-                        }
-                    }
-                    
-                    // Ajouter l'enfant
-                    if (!familyGroups[familyKey].children.has(conn.to)) {
-                        familyGroups[familyKey].children.add(conn.to);
-                        familyGroups[familyKey].childNodes.push(childNode);
-                    }
-                }
-            }
-        });
-        
-        console.log('Groupes familiaux:', familyGroups);
-        
-        // Dessiner les connexions par famille
-        Object.entries(familyGroups).forEach(([familyKey, family]) => {
-            if (family.parentNodes.length > 0 && family.childNodes.length > 0) {
-                console.log(`Famille ${familyKey}: ${family.parentNodes.length} parents, ${family.childNodes.length} enfants`);
-                svgContent += drawFamilyConnections(family, containerRect);
-            }
-        });
-        
-        // Dessiner les connexions conjugales
-        connections.forEach(conn => {
-            if (conn.type === 'conjugal') {
-                const fromNode = document.querySelector(`[data-person-id="${conn.from}"]`);
-                const toNode = document.querySelector(`[data-person-id="${conn.to}"]`);
+        svgPaths.forEach(path => {
+            if (path.type === 'line') {
+                svgContent += `
+                    <line x1="${path.x1 + dimensions.offsetX}" y1="${path.y1 + dimensions.offsetY}" 
+                          x2="${path.x2 + dimensions.offsetX}" y2="${path.y2 + dimensions.offsetY}" 
+                          stroke="${path.stroke}" 
+                          stroke-width="${path.strokeWidth}" 
+                          fill="none" />
+                `;
+            } else if (path.type === 'path') {
+                // Ajuster les coordonnées du path pour le décalage
+                let adjustedPath = path.d.replace(/M\s*(-?\d+)/g, (match, x) => `M ${parseInt(x) + dimensions.offsetX}`);
+                adjustedPath = adjustedPath.replace(/Q\s*(-?\d+)\s*(-?\d+)\s*(-?\d+)\s*(-?\d+)/g, (match, x1, y1, x2, y2) => `Q ${parseInt(x1) + dimensions.offsetX} ${parseInt(y1) + dimensions.offsetY} ${parseInt(x2) + dimensions.offsetX} ${parseInt(y2) + dimensions.offsetY}`);
                 
-                if (fromNode && toNode) {
-                    const fromRect = fromNode.getBoundingClientRect();
-                    const toRect = toNode.getBoundingClientRect();
-                    
-                    const fromX = fromRect.left - containerRect.left + fromRect.width / 2;
-                    const fromY = fromRect.top - containerRect.top + fromRect.height / 2;
-                    const toX = toRect.left - containerRect.left + toRect.width / 2;
-                    const toY = toRect.top - containerRect.top + toRect.height / 2;
-                    
-                    svgContent += `
-                        <line x1="${fromX}" y1="${fromY}" 
-                              x2="${toX}" y2="${toY}" 
-                              class="connection-line conjugal" />
-                    `;
-                }
+                svgContent += `
+                    <path d="${adjustedPath}" 
+                          stroke="${path.stroke}" 
+                          stroke-width="${path.strokeWidth}" 
+                          ${path.strokeDasharray ? `stroke-dasharray="${path.strokeDasharray}"` : ''}
+                          fill="none" />
+                `;
             }
         });
         
-        console.log('SVG Content length:', svgContent.length);
         treeSvg.innerHTML = svgContent;
     }
-    
-    // Dessiner les connexions pour une famille (système de râteau ou courbe)
-    function drawFamilyConnections(family, containerRect) {
-        let svgContent = '';
-        
-        // Calculer les positions des parents
-        const parentPositions = family.parentNodes.map(parentNode => {
-            const rect = parentNode.getBoundingClientRect();
-            return {
-                x: rect.left - containerRect.left + rect.width / 2,
-                y: rect.top - containerRect.top + rect.height
-            };
-        });
-        
-        // Calculer les positions des enfants
-        const childPositions = family.childNodes.map(childNode => {
-            const rect = childNode.getBoundingClientRect();
-            return {
-                x: rect.left - containerRect.left + rect.width / 2,
-                y: rect.top - containerRect.top
-            };
-        });
-        
-        if (parentPositions.length === 0 || childPositions.length === 0) {
-            return svgContent;
-        }
-        
-        // Point central des parents
-        const parentCenterX = parentPositions.reduce((sum, p) => sum + p.x, 0) / parentPositions.length;
-        const parentCenterY = Math.max(...parentPositions.map(p => p.y));
-        
-        // Si plusieurs parents, ligne horizontale entre eux (plus basse)
-        if (parentPositions.length > 1) {
-            const leftParent = parentPositions.reduce((min, p) => p.x < min.x ? p : min);
-            const rightParent = parentPositions.reduce((max, p) => p.x > max.x ? p : max);
-            const parentRakeY = parentCenterY + 20; // 20px plus bas que le bas des parents
-            
-            svgContent += `
-                <line x1="${leftParent.x}" y1="${parentRakeY}" 
-                      x2="${rightParent.x}" y2="${parentRakeY}" 
-                      class="connection-line parent-child" />
-            `;
-            
-            // Lignes verticales des parents vers leur râteau
-            parentPositions.forEach(parent => {
-                svgContent += `
-                    <line x1="${parent.x}" y1="${parent.y}" 
-                          x2="${parent.x}" y2="${parentRakeY}" 
-                          class="connection-line parent-child" />
-                `;
-            });
-        }
-        
-        // Si un seul enfant, faire une connexion en courbe
-        if (childPositions.length === 1) {
-            const child = childPositions[0];
-            
-            // Point de départ pour la ligne (même logique que pour plusieurs enfants)
-            let startY = parentCenterY;
-            if (parentPositions.length > 1) {
-                // Si plusieurs parents, partir du râteau des parents
-                startY = parentCenterY + 20;
-            }
-            
-            const midY = startY + (child.y - startY) / 2;
-            
-            svgContent += `
-                <path d="M ${parentCenterX} ${startY} 
-                         Q ${parentCenterX} ${midY} ${(parentCenterX + child.x) / 2} ${midY}
-                         Q ${child.x} ${midY} ${child.x} ${child.y}" 
-                      class="connection-line parent-child" />
-            `;
-        } else {
-            // Plusieurs enfants : système de râteau
-            console.log(`Râteau pour ${childPositions.length} enfants`);
-            
-            // Hauteur du râteau des enfants (point de jonction)
-            const childRakeY = parentCenterY + (Math.min(...childPositions.map(c => c.y)) - parentCenterY) * 0.6;
-            
-            // Calculer les positions des enfants pour le râteau
-            const leftChild = childPositions.reduce((min, c) => c.x < min.x ? c : min);
-            const rightChild = childPositions.reduce((max, c) => c.x > max.x ? c : max);
-            const childCenterX = (leftChild.x + rightChild.x) / 2;
-            
-            // Point de départ pour la ligne verticale centrale
-            let startY = parentCenterY;
-            if (parentPositions.length > 1) {
-                // Si plusieurs parents, partir du râteau des parents
-                startY = parentCenterY + 20;
-            }
-            
-            // Ligne centrale courbée (du râteau des parents vers le râteau des enfants)
-            const horizontalOffset = Math.abs(parentCenterX - childCenterX);
-            const curveIntensity = Math.max(30, horizontalOffset * 0.5); // Courbe plus prononcée
-            const midY = startY + (childRakeY - startY) / 2;
-            const curveX = parentCenterX + (childCenterX - parentCenterX) / 2 + (parentCenterX < childCenterX ? curveIntensity : -curveIntensity);
-            
-            svgContent += `
-                <path d="M ${parentCenterX} ${startY} 
-                         Q ${curveX} ${midY} ${childCenterX} ${childRakeY}" 
-                      class="connection-line parent-child" />
-            `;
-            
-            svgContent += `
-                <line x1="${leftChild.x}" y1="${childRakeY}" 
-                      x2="${rightChild.x}" y2="${childRakeY}" 
-                      class="connection-line parent-child" />
-            `;
-            
-            // Lignes verticales vers chaque enfant
-            childPositions.forEach(child => {
-                svgContent += `
-                    <line x1="${child.x}" y1="${childRakeY}" 
-                          x2="${child.x}" y2="${child.y}" 
-                          class="connection-line parent-child" />
-                `;
-            });
-        }
-        
-        return svgContent;
-    }
-    
-
     
     // Fonctions de contrôle
     window.centerTree = function() {
@@ -726,26 +495,43 @@ document.addEventListener('DOMContentLoaded', function() {
     window.zoomIn = function() {
         zoomLevel = Math.min(zoomLevel + 0.1, 2);
         treeContent.style.transform = `scale(${zoomLevel})`;
-        setTimeout(drawConnections, 300);
+        treeSvg.style.transform = `scale(${zoomLevel})`;
+        setTimeout(renderConnections, 300);
     };
     
     window.zoomOut = function() {
         zoomLevel = Math.max(zoomLevel - 0.1, 0.5);
         treeContent.style.transform = `scale(${zoomLevel})`;
-        setTimeout(drawConnections, 300);
+        treeSvg.style.transform = `scale(${zoomLevel})`;
+        setTimeout(renderConnections, 300);
     };
     
     window.toggleConnections = function() {
         showConnections = !showConnections;
-        drawConnections();
+        renderConnections();
     };
     
-    // Dessiner les connexions au chargement
-    setTimeout(drawConnections, 500);
+    // Positionner les personnes avec les bonnes coordonnées
+    function positionPeople() {
+        const dimensions = calculateTreeDimensions();
+        
+        personNodes.forEach(node => {
+            const x = parseInt(node.dataset.x);
+            const y = parseInt(node.dataset.y);
+            node.style.left = (x + dimensions.offsetX) + 'px';
+            node.style.top = (y + dimensions.offsetY) + 'px';
+        });
+    }
+    
+    // Initialisation
+    setTimeout(() => {
+        positionPeople();
+        renderConnections();
+    }, 100);
     
     // Redessiner lors du redimensionnement
     window.addEventListener('resize', function() {
-        setTimeout(drawConnections, 300);
+        setTimeout(renderConnections, 300);
     });
 });
 </script>

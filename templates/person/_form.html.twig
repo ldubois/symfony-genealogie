@@ -94,6 +94,14 @@
                         'label': 'Nom'
                     }) }}
                     
+                    {{ form_row(form.nickname, {
+                        'attr': {
+                            'class': 'form-control',
+                            'placeholder': 'Entrez le surnom (optionnel)'
+                        },
+                        'label': 'Surnom'
+                    }) }}
+                    
                     <div class="mb-3">
                         {{ form_label(form.gender, 'Sexe') }}
                         <div class="gender-choice">

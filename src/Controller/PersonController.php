@@ -36,12 +36,11 @@ class PersonController extends AbstractController
         // Organiser par générations
         $generations = $familyTreeService->organizeByGenerations($people);
         
-        // Obtenir les données de connexion
-        $connections = $familyTreeService->getConnectionData($generations);
+        // Obtenir les données complètes avec positions et connexions SVG
+        $treeData = $familyTreeService->getConnectionData($generations);
 
         return $this->render('person/full_tree.html.twig', [
-            'generations' => $generations,
-            'connections' => $connections,
+            'treeData' => $treeData,
         ]);
     }
 

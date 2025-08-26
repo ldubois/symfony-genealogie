@@ -32,6 +32,10 @@
                 <div class="card-body">
                     <h5 class="card-title">Informations personnelles</h5>
                     <dl class="row">
+                        {% if person.nickname %}
+                            <dt class="col-sm-4">Surnom</dt>
+                            <dd class="col-sm-8">"{{ person.nickname }}"</dd>
+                        {% endif %}
                         {% if person.birthDate %}
                             <dt class="col-sm-4">Date de naissance</dt>
                             <dd class="col-sm-8">{{ person.birthDate|date('d/m/Y') }}</dd>

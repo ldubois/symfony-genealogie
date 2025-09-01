@@ -139,60 +139,66 @@ class FamilyTreeService
         return $parents;
     }
 
-    /**
-     * Calculer les positions exactes de toutes les personnes
-     */
-    private function calculatePositions(array $generations): array
-    {
-        $positions = [];
-        $nodeWidth = 200;  // Largeur d'une carte personne
-        $nodeHeight = 120; // Hauteur d'une carte personne
-        $levelSpacing = 150; // Espacement vertical entre générations
-        $personSpacing = 40; // Espacement horizontal entre personnes
-        
-        $currentY = 50; // Position Y de départ
-        
-        // Trier les générations (des plus anciens aux plus récents)
-        $sortedLevels = array_keys($generations);
-        rsort($sortedLevels); // Trier en ordre décroissant pour mettre les anciens en premier
-        
-        foreach ($sortedLevels as $level) {
-            if ($level === 'isolated') continue; // Skip isolated pour l'instant
-            
-            $people = $generations[$level];
-            
-            // Regrouper les couples et parents ensemble
-            $arrangedPeople = $this->arrangeCouplesAndParents($people);
-            
-            $totalWidth = count($arrangedPeople) * ($nodeWidth + $personSpacing) - $personSpacing;
-            $startX = -$totalWidth / 2; // Centrer horizontalement
-            
-            $currentX = $startX;
-            
-            foreach ($arrangedPeople as $person) {
-                $positions[$person->getId()] = [
-                    'x' => $currentX,
-                    'y' => $currentY,
-                    'width' => $nodeWidth,
-                    'height' => $nodeHeight,
-                    'centerX' => $currentX + $nodeWidth / 2,
-                    'centerY' => $currentY + $nodeHeight / 2,
-                    'level' => $level,
-                    'person' => [
-                        'id' => $person->getId(),
-                        'name' => $person->getFullName(),
-                        'gender' => $person->getGender() ? $person->getGender()->value : null,
-                        'birthDate' => $person->getBirthDate()?->format('d/m/Y'),
-                        'deathDate' => $person->getDeathDate()?->format('d/m/Y'),
-                        'photo' => $person->getPhoto()
-                    ]
-                ];
-                
-                $currentX += $nodeWidth + $personSpacing;
-            }
-            
-            $currentY += $nodeHeight + $levelSpacing;
-        }
+         /**
+      * Calculer les positions exactes de toutes les personnes
+      */
+     private function calculatePositions(array $generations): array
+     {
+         $positions = [];
+         $nodeWidth = 200;  // Largeur d'une carte personne
+         $nodeHeight = 120; // Hauteur d'une carte personne
+         $levelSpacing = 150; // Espacement vertical entre générations
+         $personSpacing = 40; // Espacement horizontal entre personnes
+         
+         $currentY = 50; // Position Y de départ
+         $parentOrderNumbers = []; // Numéros d'ordre par génération
+         
+         // Trier les générations (des plus anciens aux plus récents)
+         $sortedLevels = array_keys($generations);
+         rsort($sortedLevels); // Trier en ordre décroissant pour mettre les anciens en premier
+         
+         foreach ($sortedLevels as $level) {
+             if ($level === 'isolated') continue; // Skip isolated pour l'instant
+             
+             $people = $generations[$level];
+             
+             // Trier les enfants selon les numéros d'ordre de leurs parents
+             $arrangedPeople = $this->arrangeByParentOrderNumbers($people, $parentOrderNumbers);
+             
+             $totalWidth = count($arrangedPeople) * ($nodeWidth + $personSpacing) - $personSpacing;
+             $startX = -$totalWidth / 2; // Centrer horizontalement
+             
+             $currentX = $startX;
+             $orderNumber = 0;
+             
+             foreach ($arrangedPeople as $person) {
+                 $positions[$person->getId()] = [
+                     'x' => $currentX,
+                     'y' => $currentY,
+                     'width' => $nodeWidth,
+                     'height' => $nodeHeight,
+                     'centerX' => $currentX + $nodeWidth / 2,
+                     'centerY' => $currentY + $nodeHeight / 2,
+                     'level' => $level,
+                     'person' => [
+                         'id' => $person->getId(),
+                         'name' => $person->getFullName(),
+                         'gender' => $person->getGender() ? $person->getGender()->value : null,
+                         'birthDate' => $person->getBirthDate()?->format('d/m/Y'),
+                         'deathDate' => $person->getDeathDate()?->format('d/m/Y'),
+                         'photo' => $person->getPhoto()
+                     ]
+                 ];
+                 
+                 // Attribuer un numéro d'ordre pour cette personne (position horizontale)
+                 $parentOrderNumbers[$person->getId()] = $orderNumber;
+                 
+                 $currentX += $nodeWidth + $personSpacing;
+                 $orderNumber++;
+             }
+             
+             $currentY += $nodeHeight + $levelSpacing;
+         }
         
         // Traiter les personnes isolées
         if (isset($generations['isolated']) && !empty($generations['isolated'])) {
@@ -481,54 +487,147 @@ class FamilyTreeService
         return $connections;
     }
     
-    /**
-     * Arranger les personnes pour regrouper les couples et parents ensemble
-     */
-    private function arrangeCouplesAndParents(array $people): array
-    {
-        $arranged = [];
-        $processed = [];
-        
-        foreach ($people as $person) {
-            if (in_array($person->getId(), $processed)) {
-                continue;
-            }
-            
-            // Chercher le conjoint/compagnon de cette personne dans le même niveau
-            $partner = null;
-            foreach ($person->getTousLesLiens() as $lien) {
-                if (in_array($lien->getTypeLien()->getNom(), ['Conjoint', 'Ex-conjoint', 'Compagnon', 'Séparé'])) {
-                    $potentialPartner = $lien->getAutrePersonne($person);
-                    
-                    // Vérifier si le partenaire est dans la même liste (même génération)
-                    foreach ($people as $sameLevelPerson) {
-                        if ($sameLevelPerson->getId() === $potentialPartner->getId()) {
-                            $partner = $potentialPartner;
-                            break;
-                        }
-                    }
-                    
-                    if ($partner) break;
-                }
-            }
-            
-            // Si pas de conjoint/compagnon trouvé, chercher quelqu'un avec qui cette personne a eu des enfants
-            if (!$partner) {
-                $partner = $this->findParentPartner($person, $people);
-            }
-            
-            // Ajouter la personne et son partenaire (si trouvé)
-            $arranged[] = $person;
-            $processed[] = $person->getId();
-            
-            if ($partner && !in_array($partner->getId(), $processed)) {
-                $arranged[] = $partner;
-                $processed[] = $partner->getId();
-            }
-        }
-        
-        return $arranged;
-    }
+         /**
+      * Arranger les personnes selon les numéros d'ordre en tenant compte des couples dès le départ
+      */
+     private function arrangeByParentOrderNumbers(array $people, array $parentOrderNumbers): array
+     {
+         // Calculer le numéro d'ordre pour chaque personne en tenant compte des couples
+         $peopleWithOrder = [];
+         $couplesProcessed = [];
+         
+         foreach ($people as $person) {
+             if (in_array($person->getId(), $couplesProcessed)) {
+                 continue; // Déjà traité comme partie d'un couple
+             }
+             
+             // Calculer l'ordre basé sur les parents
+             $baseOrder = $this->calculateBaseOrder($person, $parentOrderNumbers);
+             
+             // Chercher TOUS les partenaires de cette personne (conjoint, ex-conjoint, compagnon, etc.)
+             $partners = $this->findAllPartnersInList($person, $people);
+             
+             if (!empty($partners)) {
+                 // Calculer l'ordre moyen de tout le groupe (personne + tous ses partenaires)
+                 $allOrders = [$baseOrder];
+                 foreach ($partners as $partner) {
+                     $allOrders[] = $this->calculateBaseOrder($partner, $parentOrderNumbers);
+                 }
+                 
+                 $groupOrder = array_sum($allOrders) / count($allOrders);
+                 
+                 // Créer un groupe avec tous les membres (personne + partenaires)
+                 $groupMembers = [$person];
+                 foreach ($partners as $partner) {
+                     $groupMembers[] = $partner;
+                     $couplesProcessed[] = $partner->getId();
+                 }
+                 $couplesProcessed[] = $person->getId();
+                 
+                 // Trier les membres du groupe par ID pour un ordre cohérent
+                 usort($groupMembers, function($a, $b) {
+                     return $a->getId() <=> $b->getId();
+                 });
+                 
+                 // Ajouter tous les membres du groupe avec le même ordre principal
+                 $subOrderCounter = 0;
+                 foreach ($groupMembers as $member) {
+                     $peopleWithOrder[] = [
+                         'person' => $member,
+                         'order' => $groupOrder,
+                         'subOrder' => $subOrderCounter
+                     ];
+                     $subOrderCounter++;
+                 }
+             } else {
+                 // Personne seule
+                 $peopleWithOrder[] = [
+                     'person' => $person,
+                     'order' => $baseOrder,
+                     'subOrder' => 0
+                 ];
+             }
+         }
+         
+         // Trier par ordre principal, puis sous-ordre
+         usort($peopleWithOrder, function($a, $b) {
+             if ($a['order'] == $b['order']) {
+                 return $a['subOrder'] <=> $b['subOrder'];
+             }
+             return $a['order'] <=> $b['order'];
+         });
+         
+         // Extraire les personnes triées
+         return array_map(fn($item) => $item['person'], $peopleWithOrder);
+     }
+     
+     /**
+      * Calculer l'ordre de base d'une personne selon ses parents
+      */
+     private function calculateBaseOrder(Person $person, array $parentOrderNumbers): float
+     {
+         $parents = $this->getAllParents($person);
+         
+         if (!empty($parents) && !empty($parentOrderNumbers)) {
+             // Calculer la moyenne des numéros d'ordre des parents
+             $totalOrder = 0;
+             $validParents = 0;
+             
+             foreach ($parents as $parent) {
+                 if (isset($parentOrderNumbers[$parent->getId()])) {
+                     $totalOrder += $parentOrderNumbers[$parent->getId()];
+                     $validParents++;
+                 }
+             }
+             
+             return $validParents > 0 ? $totalOrder / $validParents : $person->getId();
+         } else {
+             // Pas de parents ou première génération : utiliser l'ID
+             return (float) $person->getId();
+         }
+     }
+     
+
+     
+     /**
+      * Trouver TOUS les partenaires d'une personne dans une liste
+      */
+     private function findAllPartnersInList(Person $person, array $peopleList): array
+     {
+         $partners = [];
+         
+         // Chercher tous les conjoints/compagnons/ex
+         foreach ($person->getTousLesLiens() as $lien) {
+             if (in_array($lien->getTypeLien()->getNom(), ['Conjoint', 'Ex-conjoint', 'Compagnon', 'Séparé'])) {
+                 $potentialPartner = $lien->getAutrePersonne($person);
+                 
+                 // Vérifier si ce partenaire est dans la liste
+                 foreach ($peopleList as $personInList) {
+                     if ($personInList->getId() === $potentialPartner->getId()) {
+                         $partners[] = $potentialPartner;
+                         break;
+                     }
+                 }
+             }
+         }
+         
+         // Chercher aussi les co-parents (personnes avec qui cette personne a eu des enfants)
+         $coParent = $this->findParentPartner($person, $peopleList);
+         if ($coParent && !in_array($coParent, $partners, true)) {
+             $partners[] = $coParent;
+         }
+         
+         return $partners;
+     }
+     
+     /**
+      * Trouver le partenaire (conjoint/compagnon) d'une personne dans une liste - version simple
+      */
+     private function findPartnerInList(Person $person, array $peopleList): ?Person
+     {
+         $allPartners = $this->findAllPartnersInList($person, $peopleList);
+         return !empty($allPartners) ? $allPartners[0] : null;
+     }
     
     /**
      * Trouver un partenaire avec qui la personne a eu des enfants
@@ -585,10 +684,94 @@ class FamilyTreeService
         return $children;
     }
     
-    /**
-     * Récupère les données complètes des parents d'une personne pour le template
-     */
-    public function getParentData(Person $person): array
+         /**
+      * Créer des groupes familiaux ordonnés
+      */
+     private function createFamilyGroups(array $people, array $existingPositions = []): array
+     {
+         // Grouper les enfants par leurs parents
+         $familyGroups = [];
+         $singles = [];
+         
+         foreach ($people as $person) {
+             $parents = $this->getAllParents($person);
+             
+             if (!empty($parents)) {
+                 // Créer une clé unique pour cette combinaison de parents
+                 $parentIds = array_map(fn($parent) => $parent->getId(), $parents);
+                 sort($parentIds);
+                 $familyKey = implode('-', $parentIds);
+                 
+                 if (!isset($familyGroups[$familyKey])) {
+                     $familyGroups[$familyKey] = [
+                         'parents' => $parents,
+                         'children' => [],
+                         'avgParentX' => 0
+                     ];
+                 }
+                 
+                 $familyGroups[$familyKey]['children'][] = $person;
+             } else {
+                 $singles[] = $person;
+             }
+         }
+         
+         // Calculer la position moyenne pour chaque groupe familial
+         foreach ($familyGroups as $familyKey => &$group) {
+             if (!empty($existingPositions)) {
+                 $totalX = 0;
+                 $validParents = 0;
+                 
+                 foreach ($group['parents'] as $parent) {
+                     if (isset($existingPositions[$parent->getId()])) {
+                         $totalX += $existingPositions[$parent->getId()]['centerX'];
+                         $validParents++;
+                     }
+                 }
+                 
+                 $group['avgParentX'] = $validParents > 0 ? $totalX / $validParents : 0;
+             } else {
+                 // Fallback avec ID minimum
+                 $parentIds = array_map(fn($parent) => $parent->getId(), $group['parents']);
+                 $group['avgParentX'] = min($parentIds) * 100;
+             }
+             
+             // Trier les enfants dans chaque groupe par ID pour cohérence
+             usort($group['children'], fn($a, $b) => $a->getId() <=> $b->getId());
+         }
+         
+         // Trier les groupes par position X moyenne des parents
+         uasort($familyGroups, fn($a, $b) => $a['avgParentX'] <=> $b['avgParentX']);
+         
+         // Trier les singles par ID
+         usort($singles, fn($a, $b) => $a->getId() <=> $b->getId());
+         
+         // Créer le résultat final avec la structure de groupe
+         $result = [];
+         foreach ($familyGroups as $groupKey => $group) {
+             $result[] = [
+                 'key' => $groupKey,
+                 'members' => $group['children'],
+                 'avgParentX' => $group['avgParentX']
+             ];
+         }
+         
+         // Ajouter un groupe pour les singles
+         if (!empty($singles)) {
+             $result[] = [
+                 'key' => 'singles',
+                 'members' => $singles,
+                 'avgParentX' => 999999 // À la fin
+             ];
+         }
+         
+         return $result;
+     }
+     
+     /**
+      * Récupère les données complètes des parents d'une personne pour le template
+      */
+     public function getParentData(Person $person): array
     {
         $parentData = ['fathers' => [], 'mothers' => []];
         

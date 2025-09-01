@@ -64,7 +64,7 @@
             top: 0;
             left: 0;
             z-index: 1;
-            pointer-events: none;
+            pointer-events: auto;
         }
         
         .tree-content {
@@ -274,6 +274,252 @@
         .control-btn:hover {
             background: #2980b9;
         }
+        
+        /* Modal plein écran pour SVG */
+        .fullscreen-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            overflow: auto;
+        }
+        
+        .fullscreen-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .fullscreen-content {
+            position: relative;
+            width: 95%;
+            height: 95%;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .fullscreen-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.95);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .fullscreen-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .fullscreen-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .action-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .zoom-level {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #2c3e50;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .fullscreen-btn {
+            padding: 8px 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .fullscreen-btn:hover {
+            background: #2980b9;
+        }
+        
+        .fullscreen-btn.danger {
+            background: #e74c3c;
+        }
+        
+        .fullscreen-btn.danger:hover {
+            background: #c0392b;
+        }
+        
+        .fullscreen-svg-container {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            padding-top: 60px;
+        }
+        
+        .fullscreen-svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .close-btn:hover {
+            background: #c0392b;
+        }
+        
+        /* Mode plein écran pour le SVG existant */
+        .tree-svg-container.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000;
+            background: white;
+            padding: 0;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: auto;
+            scroll-behavior: smooth;
+            /* Forcer l'affichage des scrollbars */
+            overflow-x: auto;
+            overflow-y: auto;
+        }
+        
+        /* Styles pour le défilement fluide */
+        .tree-svg-container.fullscreen::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        
+        .tree-svg-container.fullscreen::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 6px;
+        }
+        
+        .tree-svg-container.fullscreen::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 6px;
+        }
+        
+        .tree-svg-container.fullscreen::-webkit-scrollbar-thumb:hover {
+            background: #2980b9;
+        }
+        
+        .tree-svg-container.fullscreen .tree-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            user-select: none; /* Empêcher la sélection de texte */
+        }
+        
+        .tree-svg-container.fullscreen .tree-svg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            user-select: none; /* Empêcher la sélection de texte */
+        }
+        
+        /* Curseurs pour la navigation */
+        .tree-svg-container.fullscreen.draggable {
+            cursor: grab;
+        }
+        
+        .tree-svg-container.fullscreen.draggable:active {
+            cursor: grabbing;
+        }
+        
+        .fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.9);
+            z-index: 999;
+            display: none;
+        }
+        
+        .fullscreen-overlay.show {
+            display: block;
+        }
+        
+        .fullscreen-controls-overlay {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+            display: none;
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .fullscreen-controls-overlay.show {
+            display: block;
+        }
+        
+        .fullscreen-controls-overlay .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .fullscreen-controls-overlay .action-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .fullscreen-controls-overlay .zoom-level {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #2c3e50;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+
     </style>
 {% endblock %}
 
@@ -327,6 +573,9 @@
         </button>
         <button class="control-btn" onclick="toggleConnections()">
             <i class="fas fa-project-diagram"></i> Connexions
+        </button>
+        <button class="control-btn" onclick="toggleFullscreenSVG()">
+            <i class="fas fa-expand" id="fullscreenIcon"></i> <span id="fullscreenText">SVG Plein Écran</span>
         </button>
     </div>
     
@@ -387,8 +636,42 @@
     </div>
 </div>
 
+<!-- Overlay plein écran -->
+<div id="fullscreenOverlay" class="fullscreen-overlay"></div>
+
+<!-- Contrôles plein écran -->
+<div id="fullscreenControls" class="fullscreen-controls-overlay">
+    <div class="zoom-controls">
+        <button class="control-btn" onclick="fullscreenZoomOut()">
+            <i class="fas fa-search-minus"></i>
+        </button>
+        <span id="zoomLevel" class="zoom-level">100%</span>
+        <button class="control-btn" onclick="fullscreenZoomIn()">
+            <i class="fas fa-search-plus"></i>
+        </button>
+
+    </div>
+
+    <div class="action-controls">
+        <button class="control-btn" onclick="downloadCurrentSVG()">
+            <i class="fas fa-download"></i>
+        </button>
+        <button class="control-btn" onclick="printCurrentSVG()">
+            <i class="fas fa-print"></i>
+        </button>
+        <button class="control-btn danger" onclick="toggleFullscreenSVG()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+</div>
+
+
+
 <script>
+console.log('Script starting...');
+
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, starting initialization...');
     const searchInput = document.getElementById('searchInput');
     const treeContent = document.getElementById('treeContent');
     const treeSvg = document.getElementById('treeSvg');
@@ -510,6 +793,351 @@ document.addEventListener('DOMContentLoaded', function() {
         showConnections = !showConnections;
         renderConnections();
     };
+    
+    // Variables pour le mode plein écran
+    let isFullscreen = false;
+    
+    // Variables pour la navigation par clic-glisser
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let scrollStartX = 0;
+    let scrollStartY = 0;
+    
+    // Fonction pour basculer le mode plein écran
+    window.toggleFullscreenSVG = function() {
+                        // Toggle fullscreen mode
+        
+        const treeContainer = document.getElementById('treeContainer');
+        const overlay = document.getElementById('fullscreenOverlay');
+        const controls = document.getElementById('fullscreenControls');
+        const fullscreenIcon = document.getElementById('fullscreenIcon');
+        const fullscreenText = document.getElementById('fullscreenText');
+        
+        if (!isFullscreen) {
+            // Activer le mode plein écran
+            treeContainer.classList.add('fullscreen');
+            overlay.classList.add('show');
+            controls.classList.add('show');
+            
+            // Changer l'icône et le texte
+            fullscreenIcon.className = 'fas fa-compress';
+            fullscreenText.textContent = 'Quitter Plein Écran';
+            
+            // Empêcher le défilement de la page
+            document.body.style.overflow = 'hidden';
+            
+            // Réinitialiser le zoom
+            fullscreenZoom = 1;
+            setTimeout(updateFullscreenZoom, 100);
+            
+            // Ajouter l'événement de clic-glisser directement
+            setTimeout(function() {
+                const treeSvg = document.getElementById('treeSvg');
+                const treeContent = document.getElementById('treeContent');
+                
+                            // Add drag events to elements
+                
+                function handleMouseDown(event) {
+                                        // Handle mouse down for drag start
+                    
+                    if (isFullscreen && event.button === 0) {
+                        if (event.target.closest('button') || event.target.closest('a')) {
+                            return;
+                        }
+                        
+                        isDragging = true;
+                        dragStartX = event.clientX;
+                        dragStartY = event.clientY;
+                        scrollStartX = treeContainer.scrollLeft;
+                        scrollStartY = treeContainer.scrollTop;
+                        
+                        treeContainer.style.cursor = 'grabbing';
+                        event.preventDefault();
+                        event.stopPropagation();
+                        
+                        // Start dragging
+                    }
+                }
+                
+                if (treeSvg) treeSvg.addEventListener('mousedown', handleMouseDown);
+                if (treeContent) treeContent.addEventListener('mousedown', handleMouseDown);
+                
+                // Ajouter l'événement mousemove global
+                document.addEventListener('mousemove', function(event) {
+                    if (isDragging && isFullscreen) {
+                        const deltaX = event.clientX - dragStartX;
+                        const deltaY = event.clientY - dragStartY;
+                        
+                        // Multiplier par un facteur pour accélérer le défilement
+                        const scrollFactor = 3;
+                        const newScrollLeft = scrollStartX - (deltaX * scrollFactor);
+                        const newScrollTop = scrollStartY - (deltaY * scrollFactor);
+                        
+                        // Appliquer le scroll avec scrollTo
+                        treeContainer.scrollTo({
+                            left: newScrollLeft,
+                            top: newScrollTop,
+                            behavior: 'auto'
+                        });
+                        
+                        event.preventDefault();
+                        event.stopPropagation();
+                        
+                        // Log de debug pour diagnostiquer le problème horizontal
+                        if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                            console.log('=== DRAG DEBUG ===');
+                            console.log('deltaX:', deltaX, 'deltaY:', deltaY);
+                            console.log('newScrollLeft:', newScrollLeft, 'newScrollTop:', newScrollTop);
+                            console.log('containerWidth:', treeContainer.clientWidth, 'scrollWidth:', treeContainer.scrollWidth);
+                            console.log('canScrollHorizontal:', treeContainer.scrollWidth > treeContainer.clientWidth);
+                            console.log('currentScrollLeft:', treeContainer.scrollLeft);
+                            console.log('==================');
+                        }
+                    }
+                });
+                
+                document.addEventListener('mouseup', function(event) {
+                    if (isDragging) {
+                        isDragging = false;
+                        treeContainer.style.cursor = 'grab';
+                        // End dragging
+                    }
+                });
+            }, 500);
+            
+            isFullscreen = true;
+        } else {
+            // Désactiver le mode plein écran
+            treeContainer.classList.remove('fullscreen');
+            overlay.classList.remove('show');
+            controls.classList.remove('show');
+            
+            // Remettre l'icône et le texte
+            fullscreenIcon.className = 'fas fa-expand';
+            fullscreenText.textContent = 'SVG Plein Écran';
+            
+            // Restaurer le défilement de la page
+            document.body.style.overflow = 'auto';
+            
+            // Réinitialiser le zoom
+            fullscreenZoom = 1;
+            updateFullscreenZoom();
+            
+            // Réinitialiser l'état de glisser
+            isDragging = false;
+            treeContainer.style.cursor = 'default';
+            
+            isFullscreen = false;
+        }
+    };
+    
+
+    
+    // Fonction pour télécharger le SVG actuel
+    window.downloadCurrentSVG = function() {
+        const svgElement = document.getElementById('treeSvg');
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+        const svgUrl = URL.createObjectURL(svgBlob);
+        
+        const downloadLink = document.createElement('a');
+        downloadLink.href = svgUrl;
+        downloadLink.download = 'arbre-genealogique.svg';
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(svgUrl);
+    };
+    
+    // Fonction pour imprimer le SVG actuel
+    window.printCurrentSVG = function() {
+        const svgElement = document.getElementById('treeSvg');
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        const printWindow = window.open('', '_blank');
+        
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Arbre Généalogique</title>
+                    <style>
+                        body { margin: 0; padding: 20px; }
+                        svg { width: 100%; height: auto; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Arbre Généalogique Complet</h1>
+                    ${svgData}
+                </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+        printWindow.print();
+    };
+    
+    // Variables pour le zoom plein écran
+    let fullscreenZoom = 1;
+    const minZoom = 0.1;
+    const maxZoom = 5;
+    const zoomStep = 0.1;
+    
+    // Fonctions de zoom pour la modal plein écran
+    window.fullscreenZoomIn = function() {
+        fullscreenZoom = Math.min(fullscreenZoom + zoomStep, maxZoom);
+        updateFullscreenZoom();
+    };
+    
+    window.fullscreenZoomOut = function() {
+        fullscreenZoom = Math.max(fullscreenZoom - zoomStep, minZoom);
+        updateFullscreenZoom();
+    };
+    
+    window.fullscreenResetZoom = function() {
+        fullscreenZoom = 1;
+        updateFullscreenZoom();
+    };
+    
+    function updateFullscreenZoom() {
+        const treeContainer = document.getElementById('treeContainer');
+        const treeContent = document.getElementById('treeContent');
+        const treeSvg = document.getElementById('treeSvg');
+        const zoomLevelDisplay = document.getElementById('zoomLevel');
+        
+        // Update zoom level
+        
+        if (treeContainer && treeContent && treeSvg && zoomLevelDisplay) {
+            // Appliquer le zoom au contenu et au SVG
+            treeContent.style.transform = `scale(${fullscreenZoom})`;
+            treeSvg.style.transform = `scale(${fullscreenZoom})`;
+            
+            // Centrer le contenu
+            treeContent.style.transformOrigin = 'center center';
+            treeSvg.style.transformOrigin = 'center center';
+            
+            // Mettre à jour l'affichage du niveau de zoom
+            zoomLevelDisplay.textContent = Math.round(fullscreenZoom * 100) + '%';
+            
+            // Toujours activer le défilement et le clic-glisser en plein écran
+            treeContainer.style.overflow = 'auto';
+            treeContainer.style.cursor = 'grab';
+            treeContainer.classList.add('draggable');
+        }
+    }
+    
+    // Gestion du zoom et du défilement avec la molette de la souris
+    document.addEventListener('DOMContentLoaded', function() {
+        // Attendre un peu que tous les éléments soient créés
+        setTimeout(function() {
+            const treeContainer = document.getElementById('treeContainer');
+            const treeSvg = document.getElementById('treeSvg');
+            const treeContent = document.getElementById('treeContent');
+            
+            console.log('Elements found:', { 
+                treeContainer: !!treeContainer, 
+                treeSvg: !!treeSvg, 
+                treeContent: !!treeContent 
+            });
+            
+            if (treeContainer) {
+            
+            // Fonction pour gérer le clic-glisser
+            function handleMouseDown(event) {
+                console.log('Mouse down event:', { 
+                    isFullscreen, 
+                    fullscreenZoom, 
+                    button: event.button,
+                    target: event.target.tagName,
+                    targetClass: event.target.className,
+                    isButton: !!event.target.closest('button'),
+                    isLink: !!event.target.closest('a')
+                });
+                
+                if (isFullscreen && fullscreenZoom >= 1 && event.button === 0) { // Clic gauche seulement
+                    // Vérifier qu'on ne clique pas sur un bouton ou un lien
+                    if (event.target.closest('button') || event.target.closest('a')) {
+                        console.log('Click on button/link, ignoring drag');
+                        return;
+                    }
+                    
+                    isDragging = true;
+                    dragStartX = event.clientX;
+                    dragStartY = event.clientY;
+                    scrollStartX = treeContainer.scrollLeft;
+                    scrollStartY = treeContainer.scrollTop;
+                    
+                    // Changer le curseur
+                    treeContainer.style.cursor = 'grabbing';
+                    
+                    // Empêcher la sélection de texte et le comportement par défaut
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    console.log('Drag started:', { dragStartX, dragStartY, scrollStartX, scrollStartY });
+                } else {
+                    console.log('Drag conditions not met:', { isFullscreen, fullscreenZoom, button: event.button });
+                }
+            }
+            
+            // Ajouter l'événement sur le conteneur, le SVG et le contenu
+            treeContainer.addEventListener('mousedown', handleMouseDown);
+            if (treeSvg) treeSvg.addEventListener('mousedown', handleMouseDown);
+            if (treeContent) treeContent.addEventListener('mousedown', handleMouseDown);
+            
+            // Gestion de la molette
+            treeContainer.addEventListener('wheel', function(event) {
+                // Vérifier si le mode plein écran est actif
+                if (isFullscreen) {
+                    // Zoom direct avec la molette en mode plein écran
+                    event.preventDefault();
+                    const delta = event.deltaY > 0 ? -zoomStep : zoomStep;
+                    fullscreenZoom = Math.max(minZoom, Math.min(maxZoom, fullscreenZoom + delta));
+                    updateFullscreenZoom();
+                }
+            });
+            
+            // Utiliser document pour capturer le mousemove même si la souris sort du conteneur
+            document.addEventListener('mousemove', function(event) {
+                if (isDragging && isFullscreen) {
+                    const deltaX = event.clientX - dragStartX;
+                    const deltaY = event.clientY - dragStartY;
+                    
+                    const newScrollLeft = scrollStartX - deltaX;
+                    const newScrollTop = scrollStartY - deltaY;
+                    
+                    treeContainer.scrollLeft = newScrollLeft;
+                    treeContainer.scrollTop = newScrollTop;
+                    
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    console.log('Dragging:', { deltaX, deltaY, newScrollLeft, newScrollTop });
+                }
+            });
+            
+            document.addEventListener('mouseup', function(event) {
+                if (isDragging) {
+                    isDragging = false;
+                    treeContainer.style.cursor = 'grab';
+                }
+            });
+            
+            // Empêcher le menu contextuel pendant le glisser
+            treeContainer.addEventListener('contextmenu', function(event) {
+                if (isDragging) {
+                    event.preventDefault();
+                }
+            });
+            }
+        }, 1000); // Attendre 1 seconde
+    });
+    
+    // Fermer le mode plein écran avec la touche Échap
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && isFullscreen) {
+            toggleFullscreenSVG();
+        }
+    });
     
     // Positionner les personnes avec les bonnes coordonnées
     function positionPeople() {

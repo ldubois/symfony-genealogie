@@ -1,3 +1,129 @@
 body {
     background-color: skyblue;
 }
+
+/* Styles pour la surbrillance des liens familiaux */
+.family-link {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.family-link:hover {
+    stroke-width: 4px !important;
+    filter: drop-shadow(0 0 8px rgba(52, 152, 219, 0.8));
+    stroke: #3498db !important;
+}
+
+/* Surbrillance spécifique pour les liens parent-enfant */
+.parent-child-link {
+    stroke: #2c3e50;
+    stroke-width: 2;
+}
+
+.parent-child-link:hover {
+    stroke-width: 4px !important;
+    filter: drop-shadow(0 0 10px rgba(44, 62, 80, 0.9));
+    stroke: #34495e !important;
+}
+
+/* Surbrillance spécifique pour les liens conjugaux */
+.conjugal-link {
+    stroke: #e74c3c;
+    stroke-width: 2;
+}
+
+.conjugal-link:hover {
+    stroke-width: 4px !important;
+    filter: drop-shadow(0 0 10px rgba(231, 76, 60, 0.9));
+    stroke: #c0392b !important;
+}
+
+/* Animation de pulsation pour les liens au survol */
+@keyframes linkPulse {
+    0% { stroke-width: 2px; }
+    50% { stroke-width: 5px; }
+    100% { stroke-width: 2px; }
+}
+
+.family-link:hover {
+    animation: linkPulse 1.5s ease-in-out infinite;
+}
+
+/* Styles pour les info-bulles des liens */
+.link-tooltip {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    border: 2px solid #3498db;
+    transform: translateY(10px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    max-width: 250px;
+    text-align: center;
+}
+
+.link-tooltip.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.link-tooltip .tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #3498db;
+}
+
+.link-tooltip .tooltip-header i {
+    font-size: 1.1rem;
+}
+
+.link-tooltip .tooltip-content {
+    color: #ecf0f1;
+    font-size: 0.85rem;
+}
+
+/* Flèche de l'info-bulle */
+.link-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-top-color: #2c3e50;
+}
+
+/* Effet de surbrillance pour les personnes connectées */
+.person-node.connected-highlight {
+    animation: personHighlight 2s ease-in-out;
+    box-shadow: 0 0 20px rgba(52, 152, 219, 0.8);
+}
+
+@keyframes personHighlight {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Amélioration de l'effet de survol des liens */
+.family-link.link-hovered {
+    stroke-width: 5px !important;
+    filter: drop-shadow(0 0 15px rgba(52, 152, 219, 1));
+}
+
+.parent-child-link.link-hovered {
+    stroke-width: 5px !important;
+    filter: drop-shadow(0 0 15px rgba(44, 62, 80, 1));
+}
+
+.conjugal-link.link-hovered {
+    stroke-width: 5px !important;
+    filter: drop-shadow(0 0 15px rgba(231, 76, 60, 1));
+}

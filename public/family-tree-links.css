@@ -1,0 +1,133 @@
+/* Styles pour la surbrillance des liens familiaux dans l'arbre généalogique */
+
+/* IMPORTANT: Préserver les couleurs générées par le service */
+.family-link {
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+    stroke-width: 2px !important;
+    pointer-events: auto !important;
+}
+
+/* Surbrillance spécifique pour les liens parent-enfant */
+.parent-child-link {
+    /* NE PAS forcer la couleur - laisser celle du service */
+    stroke-width: 2px !important;
+}
+
+/* SURBRILLANCE FORCÉE - Styles très agressifs */
+.family-link:hover,
+.parent-child-link:hover,
+.conjugal-link:hover {
+    stroke-width: 6px !important;
+    filter: drop-shadow(0 0 15px rgba(255, 255, 0, 1)) !important;
+    stroke: #ffff00 !important; /* Couleur jaune très visible */
+}
+
+/* Surbrillance spécifique pour les liens conjugaux */
+.conjugal-link {
+    stroke: #e74c3c !important; /* Couleur rouge fixe pour les liens conjugaux */
+    stroke-width: 2px !important;
+}
+
+/* Animation de pulsation pour les liens au survol */
+@keyframes linkPulse {
+    0% { stroke-width: 2px; }
+    50% { stroke-width: 8px; }
+    100% { stroke-width: 2px; }
+}
+
+.family-link:hover,
+.parent-child-link:hover,
+.conjugal-link:hover {
+    animation: linkPulse 1s ease-in-out infinite !important;
+}
+
+/* Amélioration de l'effet de survol des liens */
+.family-link.link-hovered,
+.parent-child-link.link-hovered,
+.conjugal-link.link-hovered {
+    stroke-width: 8px !important;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 0, 1)) !important;
+    stroke: #ffff00 !important;
+}
+
+/* Styles pour les info-bulles des liens */
+.link-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1000;
+    max-width: 200px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.link-tooltip.show {
+    opacity: 1;
+}
+
+.link-tooltip .tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.link-tooltip .tooltip-header i {
+    color: #3498db;
+}
+
+.link-tooltip .tooltip-content {
+    line-height: 1.4;
+}
+
+.link-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+/* Effet de surbrillance pour les personnes connectées */
+.person-node.connected-highlight {
+    filter: drop-shadow(0 0 10px rgba(52, 152, 219, 0.8));
+    transform: scale(1.05);
+    transition: all 0.3s ease;
+}
+
+@keyframes personHighlight {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1.05); }
+}
+
+.person-node.connected-highlight {
+    animation: personHighlight 0.5s ease-out;
+}
+
+/* Debug: bordures visibles pour identifier les liens */
+.family-link {
+    outline: 1px solid transparent;
+}
+
+.family-link:hover {
+    outline: 1px solid red;
+}
+
+/* Couleurs de fallback uniquement si les attributs SVG sont manquants */
+.family-link:not([stroke]) {
+    stroke: #3498db !important;
+}
+
+.conjugal-link:not([stroke]) {
+    stroke: #e74c3c !important;
+}

@@ -5,6 +5,7 @@
 {% block stylesheets %}
     {{ parent() }}
     <link rel="stylesheet" href="{{ asset('styles/generation-labels.css') }}">
+    <link rel="stylesheet" href="/family-tree-links.css">
     <style>
         /* Reset des marges et paddings par défaut */
         * {
@@ -853,17 +854,37 @@ document.addEventListener('DOMContentLoaded', function() {
         treeContent.style.width = dimensions.width + 'px';
         treeContent.style.height = dimensions.height + 'px';
         
+        // FORCER l'interactivité du conteneur SVG
+        treeSvg.style.pointerEvents = 'auto';
+        treeSvg.style.overflow = 'visible';
+        
         let svgContent = '';
         const svgPaths = treeData.svgPaths || [];
         
         svgPaths.forEach(path => {
+            // Déterminer le type de lien pour appliquer la classe CSS appropriée
+            let linkClass = 'family-link';
+            if (path.linkType === 'parent-child') {
+                linkClass += ' parent-child-link';
+            } else if (path.linkType === 'conjugal') {
+                linkClass += ' conjugal-link';
+            }
+            
             if (path.type === 'line') {
                 svgContent += `
                     <line x1="${path.x1 + dimensions.offsetX}" y1="${path.y1 + dimensions.offsetY}" 
                           x2="${path.x2 + dimensions.offsetX}" y2="${path.y2 + dimensions.offsetY}" 
-                          stroke="${path.stroke}" 
-                          stroke-width="${path.strokeWidth}" 
-                          fill="none" />
+                          stroke="${path.stroke || '#3498db'}" 
+                          stroke-width="${path.strokeWidth || '2'}" 
+                          fill="none"
+                          class="${linkClass}"
+                          data-link-type="${path.linkType || 'family'}"
+                          ${path['data-parents'] ? `data-parents="${path['data-parents']}"` : ''}
+                          ${path['data-children'] ? `data-children="${path['data-children']}"` : ''}
+                          ${path['data-person1'] ? `data-person1="${path['data-person1']}"` : ''}
+                          ${path['data-person2'] ? `data-person2="${path['data-person2']}"` : ''}
+                          title="Lien familial: ${path.linkType || 'relation'}"
+                          style="pointer-events: auto; cursor: pointer;" />
                 `;
             } else if (path.type === 'path') {
                 // Ajuster les coordonnées du path pour le décalage
@@ -872,15 +893,202 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 svgContent += `
                     <path d="${adjustedPath}" 
-                          stroke="${path.stroke}" 
-                          stroke-width="${path.strokeWidth}" 
+                          stroke="${path.stroke || '#e74c3c'}" 
+                          stroke-width="${path.strokeWidth || '2'}" 
                           ${path.strokeDasharray ? `stroke-dasharray="${path.strokeDasharray}"` : ''}
-                          fill="none" />
+                          fill="none"
+                          class="${linkClass}"
+                          data-link-type="${path.linkType || 'family'}"
+                          ${path['data-parents'] ? `data-parents="${path['data-parents']}"` : ''}
+                          ${path['data-children'] ? `data-children="${path['data-children']}"` : ''}
+                          ${path['data-person1'] ? `data-person1="${path['data-person1']}"` : ''}
+                          ${path['data-person2'] ? `data-person2="${path['data-person2']}"` : ''}
+                          title="Lien familial: ${path.linkType || 'relation'}"
+                          style="pointer-events: auto; cursor: pointer;" />
                 `;
             }
         });
         
         treeSvg.innerHTML = svgContent;
+        
+        // Ajouter l'interactivité aux liens après le rendu
+        addLinkInteractivity();
+    }
+    
+    // Fonction pour ajouter l'interactivité aux liens familiaux
+    function addLinkInteractivity() {
+        const links = document.querySelectorAll('.family-link');
+        
+        links.forEach((link, index) => {
+            console.log(`Configuration du lien ${index}:`, link.tagName, link.getAttribute('class'));
+            
+            // Configurer l'interactivité SVG
+            link.style.pointerEvents = 'auto';
+            link.style.cursor = 'pointer';
+            
+            // TEST: Vérifier que l'élément est bien configuré
+            console.log(`Lien ${index} configuré - pointerEvents:`, link.style.pointerEvents, 'cursor:', link.style.cursor);
+            
+            // Ajouter des événements de survol
+            link.addEventListener('mouseenter', function() {
+                console.log('SURVOL DÉTECTÉ - Forcer la surbrillance');
+                
+                // FORCER la surbrillance directement sur l'élément SVG
+                this.style.strokeWidth = '8';
+                this.style.filter = 'drop-shadow(0 0 15px rgba(255, 255, 0, 1))';
+                this.style.stroke = '#ffff00';
+                
+                // Ajouter une classe pour l'effet de survol
+                this.classList.add('link-hovered');
+                
+                // Afficher une info-bulle avec le type de lien
+                const linkType = this.getAttribute('data-link-type');
+                const linkTitle = this.getAttribute('title');
+                
+                // Créer une info-bulle personnalisée
+                showLinkTooltip(this, linkType, linkTitle);
+            });
+            
+            link.addEventListener('mouseleave', function() {
+                console.log('FIN SURVOL - Restaurer l\'état normal');
+                
+                // RESTAURER l'état normal de l'élément SVG
+                this.style.strokeWidth = '';
+                this.style.filter = '';
+                this.style.stroke = '';
+                
+                // Retirer la classe de survol
+                this.classList.remove('link-hovered');
+                
+                // Masquer l'info-bulle
+                hideLinkTooltip();
+            });
+            
+            // Supprimer les événements de clic sur les liens - on utilise maintenant le clic sur les personnes
+        });
+    }
+    
+    // Ajouter la fonctionnalité de clic sur les personnes pour surbrillance des liens
+    const personNodesForLinks = document.querySelectorAll('.person-node');
+    personNodesForLinks.forEach(personNode => {
+        personNode.addEventListener('click', function() {
+            const personId = this.getAttribute('data-person-id');
+            console.log('Clic sur la personne:', personId);
+            
+            // Mettre en surbrillance tous les liens de cette personne
+            highlightPersonLinks(personId);
+        });
+    });
+    
+    // Fonction pour mettre en surbrillance tous les liens d'une personne
+    function highlightPersonLinks(personId) {
+        // Retirer la surbrillance précédente
+        document.querySelectorAll('.family-link').forEach(link => {
+            link.style.setProperty('stroke-width', '', 'important');
+            link.style.setProperty('filter', '', 'important');
+            link.style.setProperty('stroke', '', 'important');
+        });
+        
+        // Mettre en surbrillance seulement les liens connectés à la personne cliquée
+        const allLinks = document.querySelectorAll('.family-link');
+        allLinks.forEach(link => {
+            let shouldHighlight = false;
+            
+            // Vérifier les liens parent-enfant
+            const parents = link.getAttribute('data-parents');
+            const children = link.getAttribute('data-children');
+            
+            if (parents && parents.includes(personId.toString())) {
+                shouldHighlight = true;
+            }
+            if (children && children.includes(personId.toString())) {
+                shouldHighlight = true;
+            }
+            
+            // Vérifier les liens conjugaux
+            const person1 = link.getAttribute('data-person1');
+            const person2 = link.getAttribute('data-person2');
+            
+            if (person1 === personId.toString() || person2 === personId.toString()) {
+                shouldHighlight = true;
+            }
+            
+            // Mettre en surbrillance seulement si le lien est connecté
+            if (shouldHighlight) {
+                link.style.setProperty('stroke-width', '8', 'important');
+                link.style.setProperty('filter', 'drop-shadow(0 0 20px rgba(255, 255, 0, 0.8))', 'important');
+                // Garder la couleur originale du lien
+                console.log('Lien surbrillé:', link.getAttribute('data-link-type'));
+            }
+        });
+        
+        console.log('Liens mis en surbrillance pour la personne:', personId);
+    }
+    
+    // Fonction pour afficher une info-bulle sur le lien
+    function showLinkTooltip(linkElement, linkType, linkTitle) {
+        // Supprimer l'info-bulle existante
+        hideLinkTooltip();
+        
+        // Créer une nouvelle info-bulle
+        const tooltip = document.createElement('div');
+        tooltip.className = 'link-tooltip';
+        tooltip.innerHTML = `
+            <div class="tooltip-header">
+                <i class="fas fa-link"></i>
+                <span>${linkType === 'parent-child' ? 'Lien Parent-Enfant' : 'Lien Conjugal'}</span>
+            </div>
+            <div class="tooltip-content">
+                ${linkTitle}
+            </div>
+        `;
+        
+        // Positionner l'info-bulle
+        const rect = linkElement.getBoundingClientRect();
+        tooltip.style.position = 'fixed';
+        tooltip.style.left = (rect.left + rect.width / 2) + 'px';
+        tooltip.style.top = (rect.top - 10) + 'px';
+        tooltip.style.zIndex = '1000';
+        
+        document.body.appendChild(tooltip);
+        
+        // Ajouter une classe pour l'animation
+        setTimeout(() => tooltip.classList.add('show'), 10);
+    }
+    
+    // Fonction pour masquer l'info-bulle
+    function hideLinkTooltip() {
+        const existingTooltip = document.querySelector('.link-tooltip');
+        if (existingTooltip) {
+            existingTooltip.remove();
+        }
+    }
+    
+    // Fonction pour mettre en évidence les personnes connectées
+    function highlightConnectedPeople(linkElement) {
+        // Retirer la surbrillance précédente
+        document.querySelectorAll('.person-node').forEach(node => {
+            node.classList.remove('connected-highlight');
+        });
+        
+        // Ajouter la surbrillance aux personnes connectées
+        // Cette fonction peut être étendue pour identifier les personnes connectées
+        // en fonction du type de lien et de la position
+        const linkType = linkElement.getAttribute('data-link-type');
+        
+        // Pour l'instant, on met en évidence toutes les personnes de la même génération
+        // Cette logique peut être améliorée pour être plus précise
+        const personNodes = document.querySelectorAll('.person-node');
+        personNodes.forEach(node => {
+            node.classList.add('connected-highlight');
+        });
+        
+        // Retirer la surbrillance après 2 secondes
+        setTimeout(() => {
+            document.querySelectorAll('.person-node').forEach(node => {
+                node.classList.remove('connected-highlight');
+            });
+        }, 2000);
     }
     
     // Fonctions de contrôle
@@ -1007,7 +1215,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Log de debug pour diagnostiquer le problème horizontal
                         if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-                            console.log('=== DRAG DEBUG ===');
+                            // Début du drag
                             console.log('deltaX:', deltaX, 'deltaY:', deltaY);
                             console.log('newScrollLeft:', newScrollLeft, 'newScrollTop:', newScrollTop);
                             console.log('containerWidth:', treeContainer.clientWidth, 'scrollWidth:', treeContainer.scrollWidth);
@@ -1280,61 +1488,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Le tri JavaScript perturbe l'ordre et place Eglantine/Capucine à la fin
         // Les données PHP sont déjà dans le bon ordre familial
         
-        // DEBUG : Afficher l'ordre final
-        console.log('=== ORDRE FINAL DES PERSONNES ===');
-        orderedPersonIds.forEach((personId, index) => {
-            const personData = treeData.positionedPeople[personId];
-            console.log(`${index}: ${personData.person.name} (niveau ${personData.level})`);
-        });
-        console.log('================================');
+        // Ordre final des personnes calculé
         
-        console.log('=== DEBUG POSITIONNEMENT ===');
-        console.log('IDs des personnes dans l\'ordre PHP:', orderedPersonIds);
-        console.log('Données complètes PHP:', treeData.positionedPeople);
+        // Début du positionnement
+        // Données PHP reçues
         
-        // DEBUG DÉTAILLÉ : Position de chaque personne dans le tableau reçu
-        console.log('=== DEBUG POSITION DANS LE TABLEAU ===');
-        console.log('Clés reçues de PHP:', Object.keys(treeData.positionedPeople));
-        
-        // Afficher la position de chaque personne dans le tableau original
-        const keys = Object.keys(treeData.positionedPeople);
-        keys.forEach((personId, index) => {
-            const personData = treeData.positionedPeople[personId];
-            console.log(`Position ${index} dans le tableau: ID ${personId} = ${personData.person.name} (niveau ${personData.level})`);
-        });
-        
-        // DEBUG : Vérifier l'ordre des clés vs l'ordre trié
-        console.log('=== COMPARAISON ORDRES ===');
-        console.log('Ordre des clés originales:', keys);
-        console.log('Ordre après tri:', orderedPersonIds);
-        
-        // Vérifier si l'ordre a changé
-        const orderChanged = JSON.stringify(keys) !== JSON.stringify(orderedPersonIds);
-        console.log('L\'ordre a-t-il changé après le tri?', orderChanged);
-        
-        if (orderChanged) {
-            console.log('⚠️ ATTENTION: L\'ordre a été modifié par le tri JavaScript !');
-            console.log('Cela peut expliquer pourquoi Eglantine et Capucine sont mal positionnées.');
-        }
-        
-        // Afficher l'ordre des personnes par génération
-        const peopleByLevel = {};
-        orderedPersonIds.forEach(personId => {
-            const personData = treeData.positionedPeople[personId];
-            if (personData && personData.level !== undefined) {
-                if (!peopleByLevel[personData.level]) {
-                    peopleByLevel[personData.level] = [];
-                }
-                peopleByLevel[personData.level].push({
-                    id: personId,
-                    name: personData.person.name,
-                    x: personData.x,
-                    y: personData.y
-                });
-            }
-        });
-        
-        console.log('Personnes par niveau:', peopleByLevel);
+        // Positionner les personnes dans l'ordre trié
         
         orderedPersonIds.forEach(personId => {
             const personData = treeData.positionedPeople[personId];
@@ -1345,8 +1504,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const y = parseInt(personData.y);
                 personNode.style.left = (x + dimensions.offsetX) + 'px';
                 personNode.style.top = (y + dimensions.offsetY) + 'px';
+                // Personne positionnée
                 
-                console.log(`Positionné ${personData.person.name} (ID: ${personId}) à x=${x}, y=${y}`);
+                // Positionné avec succès
             } else {
                 console.warn(`Personne non trouvée ou données manquantes pour ID: ${personId}`);
             }
@@ -1355,7 +1515,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Positionner les étiquettes de génération
         positionGenerationLabels(dimensions);
         
-        console.log('=== FIN DEBUG POSITIONNEMENT ===');
+        // Positionnement terminé
     }
     
     // Positionner les étiquettes de génération
@@ -1372,7 +1532,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 labelElement.style.top = (y + dimensions.offsetY + 120) + 'px';
                 labelElement.style.left = (15 + dimensions.offsetX) + 'px';
                 
-                console.log(`Positionné étiquette génération ${level} à y=${y + dimensions.offsetY + 120}, x=${15 + dimensions.offsetX}`);
+                // Étiquette de génération positionnée
             }
         });
     }

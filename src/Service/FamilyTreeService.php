@@ -721,7 +721,9 @@ class FamilyTreeService
                 'y2' => $rakeY, // Même hauteur (ligne horizontale)
                 'class' => 'parent-child-connection',
                 'stroke' => $familyColor,
-                'strokeWidth' => 3
+                'strokeWidth' => 3,
+                'linkType' => 'parent-child',
+                'data-parents' => implode(',', array_keys($family['parents']))
             ];
             
                                                   // Lignes verticales des parents vers le râteau
@@ -734,7 +736,9 @@ class FamilyTreeService
                      'y2' => $rakeY, // Jusqu'au râteau horizontal
                      'class' => 'parent-child-connection',
                      'stroke' => $familyColor,
-                     'strokeWidth' => 2
+                     'strokeWidth' => 2,
+                     'linkType' => 'parent-child',
+                     'data-parents' => implode(',', array_keys($family['parents']))
                  ];
              }
              $parentBottomY = $rakeY;
@@ -760,7 +764,10 @@ class FamilyTreeService
                  ),
                  'class' => 'parent-child-connection',
                  'stroke' => $familyColor,
-                 'strokeWidth' => 3
+                 'strokeWidth' => 3,
+                 'linkType' => 'parent-child',
+                 'data-parents' => implode(',', array_keys($family['parents'])),
+                 'data-children' => implode(',', array_keys($family['children']))
              ];
         } else {
             // Plusieurs enfants : râteau
@@ -788,7 +795,10 @@ class FamilyTreeService
                 ),
                 'class' => 'parent-child-connection',
                 'stroke' => $familyColor,
-                'strokeWidth' => 3
+                'strokeWidth' => 3,
+                'linkType' => 'parent-child',
+                'data-parents' => implode(',', array_keys($family['parents'])),
+                'data-children' => implode(',', array_keys($family['children']))
             ];
             
             // Râteau horizontal
@@ -800,7 +810,10 @@ class FamilyTreeService
                 'y2' => $childRakeY,
                 'class' => 'parent-child-connection',
                 'stroke' => $familyColor,
-                'strokeWidth' => 3
+                'strokeWidth' => 3,
+                'linkType' => 'parent-child',
+                'data-parents' => implode(',', array_keys($family['parents'])),
+                'data-children' => implode(',', array_keys($family['children']))
             ];
             
                          // Lignes vers chaque enfant
@@ -813,7 +826,10 @@ class FamilyTreeService
                      'y2' => $child['y'] + 30, // Descendre 30px dans la carte enfant
                      'class' => 'parent-child-connection',
                      'stroke' => $familyColor,
-                     'strokeWidth' => 2
+                     'strokeWidth' => 2,
+                     'linkType' => 'parent-child',
+                     'data-parents' => implode(',', array_keys($family['parents'])),
+                     'data-children' => implode(',', array_keys($family['children']))
                  ];
              }
         }
@@ -861,7 +877,10 @@ class FamilyTreeService
                                 'class' => 'conjugal-connection',
                                 'stroke' => '#e91e63',
                                 'strokeWidth' => 2,
-                                'strokeDasharray' => '5,5'
+                                'strokeDasharray' => '5,5',
+                                'linkType' => 'conjugal',
+                                'data-person1' => $person->getId(),
+                                'data-person2' => $spouse->getId()
                             ];
                             
                             $processedPairs[] = $pairKey;

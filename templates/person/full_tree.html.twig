@@ -4,6 +4,7 @@
 
 {% block stylesheets %}
     {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/generation-labels.css') }}">
     <style>
         /* Reset des marges et paddings par défaut */
         * {
@@ -117,6 +118,8 @@
             font-weight: bold;
             white-space: nowrap;
         }
+        
+
         
         .person-node {
             background: white;
@@ -683,6 +686,18 @@
         </svg>
         
         <div class="tree-content" id="treeContent">
+            <!-- Étiquettes de génération -->
+            {% if treeData.generationInfo is defined %}
+                {% for level, genInfo in treeData.generationInfo %}
+                    <div class="generation-label-overlay" 
+                         data-level="{{ level }}"
+                         style="top: {{ genInfo.y + 120 }}px;">
+                        <i class="fas fa-users"></i> {{ genInfo.name }}
+                        <span class="generation-count">({{ genInfo.count }})</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
             <!-- Les personnes sont positionnées absolument selon les calculs du backend -->
             {% for personId, personData in treeData.positionedPeople %}
                 {% set person = personData.person %}
@@ -878,6 +893,10 @@ document.addEventListener('DOMContentLoaded', function() {
         treeContent.style.transform = `scale(${zoomLevel})`;
         treeSvg.style.transform = `scale(${zoomLevel})`;
         setTimeout(renderConnections, 300);
+        
+        // Mettre à jour les positions des étiquettes de génération
+        const dimensions = calculateTreeDimensions();
+        positionGenerationLabels(dimensions);
     };
     
     window.zoomOut = function() {
@@ -885,6 +904,10 @@ document.addEventListener('DOMContentLoaded', function() {
         treeContent.style.transform = `scale(${zoomLevel})`;
         treeSvg.style.transform = `scale(${zoomLevel})`;
         setTimeout(renderConnections, 300);
+        
+        // Mettre à jour les positions des étiquettes de génération
+        const dimensions = calculateTreeDimensions();
+        positionGenerationLabels(dimensions);
     };
     
     window.toggleConnections = function() {
@@ -1329,7 +1352,29 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
+        // Positionner les étiquettes de génération
+        positionGenerationLabels(dimensions);
+        
         console.log('=== FIN DEBUG POSITIONNEMENT ===');
+    }
+    
+    // Positionner les étiquettes de génération
+    function positionGenerationLabels(dimensions) {
+        if (!treeData.generationInfo) return;
+        
+        Object.keys(treeData.generationInfo).forEach(level => {
+            const genInfo = treeData.generationInfo[level];
+            const labelElement = document.querySelector(`[data-level="${level}"]`);
+            
+            if (labelElement && genInfo.y !== undefined) {
+                const y = parseInt(genInfo.y);
+                // Positionner vraiment tout à gauche avec rotation -90°
+                labelElement.style.top = (y + dimensions.offsetY + 120) + 'px';
+                labelElement.style.left = (15 + dimensions.offsetX) + 'px';
+                
+                console.log(`Positionné étiquette génération ${level} à y=${y + dimensions.offsetY + 120}, x=${15 + dimensions.offsetX}`);
+            }
+        });
     }
     
     // Initialisation

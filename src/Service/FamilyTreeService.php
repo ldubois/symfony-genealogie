@@ -110,6 +110,9 @@ class FamilyTreeService
         // IMPORTANT : Réorganiser positionedPeople pour respecter l'ordre des générations
         $orderedPositionedPeople = $this->reorderPositionedPeople($positionedPeople, $generations);
         
+        // Préparer les informations sur les générations pour l'affichage
+        $generationInfo = $this->prepareGenerationInfo($generations, $positionedPeople);
+        
         // DEBUG : Afficher l'ordre final des personnes
         error_log("=== DEBUG SERVICE - ORDRE FINAL ===");
         foreach ($orderedPositionedPeople as $personId => $personData) {
@@ -119,11 +122,74 @@ class FamilyTreeService
         
         return [
             'positionedPeople' => $orderedPositionedPeople,
-            'svgPaths' => $svgPaths
+            'svgPaths' => $svgPaths,
+            'generationInfo' => $generationInfo
         ];
     }
     
 
+
+    /**
+     * Préparer les informations sur les générations pour l'affichage
+     */
+    private function prepareGenerationInfo(array $generations, array $positionedPeople): array
+    {
+        $generationInfo = [];
+        
+        // Trier les générations par niveau (des plus anciens aux plus récents)
+        $sortedLevels = array_keys($generations);
+        sort($sortedLevels);
+        
+        foreach ($sortedLevels as $level) {
+            if ($level === 'isolated') continue;
+            
+            $people = $generations[$level];
+            $count = count($people);
+            
+            // Déterminer le nom de la génération
+            $generationName = $this->getGenerationName($level);
+            
+            // Calculer la position Y de la génération (basée sur la première personne)
+            $firstPerson = reset($people);
+            $generationY = 0; // Sera calculé plus tard
+            
+            // Trouver la position Y de cette génération dans les données positionnées
+            if ($firstPerson && isset($positionedPeople[$firstPerson->getId()])) {
+                $generationY = $positionedPeople[$firstPerson->getId()]['y'];
+            }
+            
+            $generationInfo[$level] = [
+                'level' => $level,
+                'name' => $generationName,
+                'count' => $count,
+                'people' => $people,
+                'y' => $generationY
+            ];
+        }
+        
+        return $generationInfo;
+    }
+    
+    /**
+     * Obtenir le nom de la génération
+     */
+    private function getGenerationName(int $level): string
+    {
+        switch ($level) {
+            case 0:
+                return 'Ancêtres (Génération 0)';
+            case 1:
+                return 'Parents (Génération 1)';
+            case 2:
+                return 'Enfants (Génération 2)';
+            case 3:
+                return 'Petits-enfants (Génération 3)';
+            case 4:
+                return 'Arrière-petits-enfants (Génération 4)';
+            default:
+                return "Génération $level";
+        }
+    }
 
     /**
      * Récupère tous les parents d'une personne (anciens champs + nouveaux liens)
@@ -189,9 +255,12 @@ class FamilyTreeService
              
              $people = $generations[$level];
              
-                           // IMPORTANT : Utiliser directement l'ordre des personnes dans la génération
-              // plutôt que de passer par arrangeByParentOrderNumbers qui peut perturber l'ordre
-              $arrangedPeople = $people;
+             // IMPORTANT : Utiliser directement l'ordre des personnes dans la génération
+             // plutôt que de passer par arrangeByParentOrderNumbers qui peut perturber l'ordre
+             $arrangedPeople = $people;
+             
+             // Stocker la position Y de cette génération pour les étiquettes
+             $generationY = $currentY;
              
              $totalWidth = count($arrangedPeople) * ($nodeWidth + $personSpacing) - $personSpacing;
              $startX = -$totalWidth / 2; // Centrer horizontalement

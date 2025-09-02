@@ -142,51 +142,75 @@ class FamilyTreeService
         $parentsWithChildren = $this->identifyParentsWithChildren($peopleInGen);
         error_log("Parents avec enfants: " . implode(', ', array_map(fn($p) => $p->getFirstName(), $parentsWithChildren)));
         
-        // Réorganiser avec priorité : couples, puis parents d'enfants, puis fraterie
+        // NOUVELLE LOGIQUE COMPLÈTE : Respecter l'ordre des parents ET des couples
         $reordered = [];
         $processed = [];
         
-        // Étape 1 : Ajouter d'abord les couples
-        foreach ($peopleInGen as $person) {
-            if (in_array($person->getId(), $processed)) {
-                continue;
-            }
+        // Étape 1 : Identifier tous les couples ET les personnes liées (conjoints, ex-conjoints, etc.)
+        $allLinkedPeople = [];
+        foreach ($couples as $couple) {
+            $person1 = $couple['person1'];
+            $person2 = $couple['person2'];
             
-            // Si cette personne a un conjoint, les ajouter ensemble
-            if (isset($coupleMap[$person->getId()])) {
-                $spouse = $coupleMap[$person->getId()];
-                if (!in_array($spouse->getId(), $processed)) {
+            // Vérifier que les deux personnes sont dans cette génération
+            if (in_array($person1, $peopleInGen) && in_array($person2, $peopleInGen)) {
+                $allLinkedPeople[] = [
+                    'people' => [$person1, $person2],
+                    'parentOrder' => $this->getParentOrder($person1),
+                    'type' => $couple['type']
+                ];
+            }
+        }
+        
+        // Trier les groupes de personnes liées selon l'ordre de leurs parents
+        usort($allLinkedPeople, function($a, $b) {
+            return $a['parentOrder'] <=> $b['parentOrder'];
+        });
+        
+        // Ajouter les groupes de personnes liées dans l'ordre
+        foreach ($allLinkedPeople as $group) {
+            foreach ($group['people'] as $person) {
+                if (!in_array($person->getId(), $processed)) {
                     $reordered[] = $person;
-                    $reordered[] = $spouse;
                     $processed[] = $person->getId();
-                    $processed[] = $spouse->getId();
-                    error_log("Ajouté couple: " . $person->getFirstName() . " + " . $spouse->getFirstName());
+                    error_log("Ajouté personne liée: " . $person->getFirstName() . " (type: " . $group['type'] . ")");
                 }
             }
         }
         
-        // Étape 2 : Ajouter les parents d'enfants restants (sans conjoint ET non déjà traités)
-        foreach ($peopleInGen as $person) {
-            if (in_array($person->getId(), $processed)) {
-                continue;
-            }
-            
-            if (in_array($person, $parentsWithChildren)) {
+        // Étape 2 : Ajouter les parents d'enfants restants selon l'ordre de leurs parents
+        $remainingParents = array_filter($peopleInGen, function($person) use ($processed) {
+            return !in_array($person->getId(), $processed) && $this->hasChildren($person);
+        });
+        
+        // Trier les parents restants selon l'ordre de leurs parents
+        usort($remainingParents, function($a, $b) {
+            return $this->getParentOrder($a) <=> $this->getParentOrder($b);
+        });
+        
+        foreach ($remainingParents as $person) {
+            if (!in_array($person->getId(), $processed)) {
                 $reordered[] = $person;
                 $processed[] = $person->getId();
-                error_log("Ajouté parent d'enfant: " . $person->getFirstName());
+                error_log("Ajouté parent d'enfant trié: " . $person->getFirstName());
             }
         }
         
-        // Étape 3 : Ajouter le reste (fraterie et autres)
-        foreach ($peopleInGen as $person) {
-            if (in_array($person->getId(), $processed)) {
-                continue;
+        // Étape 3 : Ajouter le reste (personnes sans enfants) selon l'ordre de leurs parents
+        $remainingOthers = array_filter($peopleInGen, function($person) use ($processed) {
+            return !in_array($person->getId(), $processed);
+        });
+        
+        usort($remainingOthers, function($a, $b) {
+            return $this->getParentOrder($a) <=> $this->getParentOrder($b);
+        });
+        
+        foreach ($remainingOthers as $person) {
+            if (!in_array($person->getId(), $processed)) {
+                $reordered[] = $person;
+                $processed[] = $person->getId();
+                error_log("Ajouté autre trié: " . $person->getFirstName());
             }
-            
-            $reordered[] = $person;
-            $processed[] = $person->getId();
-            error_log("Ajouté autre: " . $person->getFirstName());
         }
         
         error_log("Ordre final: " . implode(', ', array_map(fn($p) => $p->getFirstName(), $reordered)));
@@ -370,31 +394,68 @@ class FamilyTreeService
         $couples = [];
         $processed = [];
         
+        // Créer d'abord une liste de tous les liens conjugaux
+        $allConjugalLinks = [];
         foreach ($people as $person) {
-            if (in_array($person->getId(), $processed)) {
-                continue;
-            }
-            
             foreach ($person->getTousLesLiens() as $lien) {
                 $typeLien = $lien->getTypeLien();
                 if (in_array($typeLien->getNom(), ['Conjoint', 'Ex-conjoint', 'Compagnon', 'Séparé'])) {
                     $spouse = $lien->getAutrePersonne($person);
                     
-                    // Éviter les doublons et les couples avec soi-même
-                    if (!in_array($person->getId(), $processed) && 
-                        !in_array($spouse->getId(), $processed) && 
-                        $person->getId() !== $spouse->getId()) {
-                        $couples[] = [
-                            'person1' => $person,
-                            'person2' => $spouse,
-                            'type' => $typeLien->getNom()
-                        ];
-                        $processed[] = $person->getId();
-                        $processed[] = $spouse->getId();
+                    // Éviter les liens avec soi-même
+                    if ($person->getId() !== $spouse->getId()) {
+                        // Créer une clé unique pour ce couple
+                        $coupleKey = min($person->getId(), $spouse->getId()) . '-' . max($person->getId(), $spouse->getId());
+                        
+                        if (!isset($allConjugalLinks[$coupleKey])) {
+                            $allConjugalLinks[$coupleKey] = [
+                                'person1' => $person,
+                                'person2' => $spouse,
+                                'type' => $typeLien->getNom()
+                            ];
+                        }
                     }
                 }
             }
         }
+        
+        // Debug
+        error_log("=== DEBUG IDENTIFY COUPLES ===");
+        error_log("Liens conjugaux trouvés : " . count($allConjugalLinks));
+        foreach ($allConjugalLinks as $coupleKey => $couple) {
+            error_log("Couple {$coupleKey}: {$couple['person1']->getFirstName()} <-> {$couple['person2']->getFirstName()} ({$couple['type']})");
+        }
+        
+        // Convertir en tableau et éviter les doublons
+        // IMPORTANT : Trier les couples par priorité (Conjoint > Ex-conjoint > Compagnon > Séparé)
+        $couplePriorities = [
+            'Conjoint' => 1,
+            'Ex-conjoint' => 2,
+            'Compagnon' => 3,
+            'Séparé' => 4
+        ];
+        
+        // Trier les couples par priorité
+        uasort($allConjugalLinks, function($a, $b) use ($couplePriorities) {
+            $priorityA = $couplePriorities[$a['type']] ?? 999;
+            $priorityB = $couplePriorities[$b['type']] ?? 999;
+            return $priorityA <=> $priorityB;
+        });
+        
+        foreach ($allConjugalLinks as $coupleKey => $couple) {
+            if (!in_array($couple['person1']->getId(), $processed) && 
+                !in_array($couple['person2']->getId(), $processed)) {
+                $couples[] = $couple;
+                $processed[] = $couple['person1']->getId();
+                $processed[] = $couple['person2']->getId();
+                error_log("Couple ajouté: {$couple['person1']->getFirstName()} <-> {$couple['person2']->getFirstName()} ({$couple['type']})");
+            } else {
+                error_log("Couple ignoré (déjà traité): {$couple['person1']->getFirstName()} <-> {$couple['person2']->getFirstName()} ({$couple['type']})");
+            }
+        }
+        
+        error_log("Couples finaux : " . count($couples));
+        error_log("=== FIN DEBUG IDENTIFY COUPLES ===");
         
         return $couples;
     }
@@ -1238,24 +1299,16 @@ class FamilyTreeService
               // Identifier la famille par les parents
               $familyKey = implode('-', array_map(fn($p) => $p->getId(), $parents));
               
-                             // Priorités familiales spécifiques (basées sur la logique métier)
+                             // LOGIQUE GÉNÉRIQUE : Priorité basée uniquement sur l'ordre des parents
+               // Plus l'ordre des parents est petit, plus la priorité est élevée
+               // Cela garantit que les enfants des premiers parents (ordre 0) ont la priorité la plus élevée
                error_log("DEBUG calculateChildFamilyPriority: {$person->getFirstName()} a les parents IDs: " . implode(', ', $parentIds));
                
-               if (in_array(6, $parentIds) && in_array(7, $parentIds)) {
-                   // Enfants d'Isabelle (ID 6) et Pierre (ID 7) : priorité 0.0
-                   error_log("DEBUG: {$person->getFirstName()} est enfant d'Isabelle/Pierre → priorité 0.0");
-                   return 0.0;
-               } elseif (in_array(7, $parentIds) && in_array(11, $parentIds)) {
-                   // Enfants de Pierre (ID 7) et Christine (ID 11) : priorité 1.0
-                   error_log("DEBUG: {$person->getFirstName()} est enfant de Pierre/Christine → priorité 1.0");
-                   return 1.0;
-               } else {
-                   // Autres familles : priorité basée sur l'ordre des parents + offset
-                   $familyOffset = (array_sum($parentIds) % 100) * 0.01;
-                   $finalPriority = $basePriority + $familyOffset;
-                   error_log("DEBUG: {$person->getFirstName()} est autre famille → priorité {$finalPriority}");
-                   return $finalPriority;
-               }
+               // Priorité basée uniquement sur l'ordre des parents dans leur génération
+               // Pas de référence aux prénoms ou IDs spécifiques
+               $finalPriority = $basePriority;
+               error_log("DEBUG: {$person->getFirstName()} a la priorité {$finalPriority} basée sur l'ordre de ses parents");
+               return $finalPriority;
               
               return $basePriority;
           }
@@ -1287,5 +1340,36 @@ class FamilyTreeService
          sort($familyParentOrders);
          
          return $personParentOrders == $familyParentOrders;
+     }
+     
+     /**
+      * Obtenir l'ordre d'un parent pour le tri
+      */
+     private function getParentOrder(Person $person): int
+     {
+         $parents = $this->getAllParents($person);
+         
+         if (empty($parents)) {
+             return 999999; // Personnes sans parents à la fin
+         }
+         
+         // Prendre le parent avec l'ID le plus petit (plus ancien dans la génération)
+         return min(array_map(fn($p) => $p->getId(), $parents));
+     }
+     
+     /**
+      * Vérifier si une personne a des enfants
+      */
+     private function hasChildren(Person $person): bool
+     {
+         foreach ($person->getTousLesLiens() as $lien) {
+             $typeLien = $lien->getTypeLien();
+             if ($typeLien->isEstParental() && $lien->isActifADate()) {
+                 if ($lien->getPersonne1() === $person) {
+                     return true;
+                 }
+             }
+         }
+         return false;
      }
  }

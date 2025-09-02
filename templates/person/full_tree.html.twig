@@ -5,20 +5,37 @@
 {% block stylesheets %}
     {{ parent() }}
     <style>
+        /* Reset des marges et paddings par défaut */
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        
         .tree-container {
-            padding: 20px;
+            padding: 0;
+            margin: 0;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
             overflow-x: auto;
+            width: 100vw;
+            max-width: 100vw;
+            box-sizing: border-box;
         }
         
         .tree-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin: 0 0 30px 0;
             padding: 20px;
             background: white;
-            border-radius: 15px;
+            border-radius: 0;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            box-sizing: border-box;
         }
         
         .tree-header h1 {
@@ -54,9 +71,12 @@
             width: 100%;
             height: 80vh;
             background: white;
-            border-radius: 15px;
+            border-radius: 0;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             overflow: auto;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
         .tree-svg {
@@ -71,6 +91,9 @@
             position: relative;
             z-index: 2;
             padding: 40px;
+            width: 100%;
+            max-width: none;
+            box-sizing: border-box;
         }
         
         .generation {
@@ -234,8 +257,11 @@
         }
         
         .search-controls {
-            margin-bottom: 20px;
+            margin: 0 0 20px 0;
             text-align: center;
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
         }
         
         .search-input {
@@ -258,7 +284,10 @@
             display: flex;
             justify-content: center;
             gap: 10px;
-            margin-bottom: 20px;
+            margin: 0 0 20px 0;
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
         }
         
         .control-btn {
@@ -407,10 +436,10 @@
         /* Mode plein écran pour le SVG existant */
         .tree-svg-container.fullscreen {
             position: fixed;
-            top: 0;
+            top: 56px; /* Hauteur du menu Bootstrap */
             left: 0;
             width: 100vw;
-            height: 100vh;
+            height: calc(100vh - 56px); /* Hauteur totale moins le menu */
             z-index: 1000;
             background: white;
             padding: 0;
@@ -421,6 +450,75 @@
             /* Forcer l'affichage des scrollbars */
             overflow-x: auto;
             overflow-y: auto;
+        }
+        
+        /* Assurer que l'arbre prend toute la largeur */
+        .tree-svg-container {
+            margin: 0;
+            border-radius: 0;
+        }
+        
+        /* Responsive design pour les petits écrans */
+        @media (max-width: 768px) {
+            .tree-container {
+                padding: 0;
+                width: 100vw;
+                max-width: 100vw;
+            }
+            
+            .tree-header {
+                margin: 0 0 20px 0;
+                padding: 15px;
+                width: 100%;
+            }
+            
+            .search-controls,
+            .tree-controls {
+                padding: 15px;
+                width: 100%;
+            }
+            
+            .tree-stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+        
+        /* Surcharger Bootstrap et s'assurer de la pleine largeur */
+        .tree-container,
+        .tree-container * {
+            max-width: none !important;
+        }
+        
+        /* Garder le menu de navigation visible */
+        .navbar {
+            position: relative !important;
+            z-index: 1001 !important;
+        }
+        
+        .navbar-nav {
+            z-index: 1001 !important;
+        }
+        
+        /* Forcer la pleine largeur */
+        .tree-container {
+            position: relative;
+            left: 0;
+            right: 0;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        
+        /* Surcharger les paddings et marges Bootstrap du conteneur principal */
+        .container {
+            padding-right: 0 !important;
+            padding-left: 0 !important;
+            margin-right: 8px !important;
+            margin-left: 8px !important;
+            max-width: none !important;
+            width: calc(100% - 16px) !important;
         }
         
         /* Styles pour le défilement fluide */

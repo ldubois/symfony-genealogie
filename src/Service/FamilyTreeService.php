@@ -11,19 +11,19 @@ class FamilyTreeService
         $personLevels = [];
         $generations = [];
         
-        // Étape 1 : Calculer le niveau de chaque personne (distance depuis les ancêtres)
+        // Étape 1 : Identifier les couples et les traiter comme des unités
+        $couples = $this->identifyCouples($people);
+        
+        // Étape 2 : Calculer le niveau de chaque personne en tenant compte des couples
         foreach ($people as $person) {
-            $level = $this->calculatePersonLevel($person, []);
+            $level = $this->calculatePersonLevelWithCouples($person, [], $couples);
             $personLevels[$person->getId()] = $level;
         }
         
-        // Étape 2 : Ajuster les niveaux des conjoints (même niveau que leur partenaire)
+        // Étape 3 : Ajuster les niveaux des conjoints (même niveau que leur partenaire)
         $this->adjustSpouseLevels($people, $personLevels);
         
-        // Étape 3 : Les niveaux sont déjà corrects (0 = ancêtres, 1 = parents, 2 = enfants)
-        // Pas besoin d'inverser car calculatePersonLevel donne déjà le bon ordre
-        
-        // Étape 5 : Organiser par générations
+        // Étape 4 : Organiser par générations
         foreach ($people as $person) {
             $level = $personLevels[$person->getId()];
             
@@ -36,16 +36,187 @@ class FamilyTreeService
         // Trier les générations par niveau
         ksort($generations);
         
-        // IMPORTANT : Trier les personnes dans chaque génération selon l'ordre familial
+        // Étape 5 : Trier les personnes dans chaque génération en regroupant les couples
         foreach ($generations as $level => &$peopleInGen) {
-            usort($peopleInGen, function($a, $b) use ($peopleInGen) {
-                return $this->calculateFamilyOrder($a, [], [], $peopleInGen) <=> $this->calculateFamilyOrder($b, [], [], $peopleInGen);
-            });
+            // Appliquer le tri des couples AVANT le tri alphabétique
+            $this->sortGenerationWithCouples($peopleInGen, $couples);
+        }
+        
+        // Étape 6 : Réorganiser les enfants selon l'ordre de leurs parents
+        if (isset($generations[2])) { // Génération des enfants
+            $this->sortChildrenByParentOrder($generations[2], $generations[1], $couples);
         }
         
         return $generations;
     }
     
+    /**
+     * Trie les enfants selon l'ordre de leurs parents dans la génération précédente
+     */
+    private function sortChildrenByParentOrder(array &$children, array $parents, array $couples): void
+    {
+        // Créer un mapping des couples pour identifier les parents ensemble
+        $coupleMap = [];
+        foreach ($couples as $couple) {
+            $coupleMap[$couple['person1']->getId()] = $couple['person2'];
+            $coupleMap[$couple['person2']->getId()] = $couple['person1'];
+        }
+        
+        // Créer un mapping des enfants par parent
+        $childrenByParent = [];
+        foreach ($children as $child) {
+            $childParents = $this->getAllParents($child);
+            foreach ($childParents as $parent) {
+                if (!isset($childrenByParent[$parent->getId()])) {
+                    $childrenByParent[$parent->getId()] = [];
+                }
+                $childrenByParent[$parent->getId()][] = $child;
+            }
+        }
+        
+        // Réorganiser les enfants selon l'ordre des parents
+        $reorderedChildren = [];
+        $processedChildren = [];
+        
+        // Parcourir les parents dans l'ordre exact de la génération
+        foreach ($parents as $parent) {
+            $parentId = $parent->getId();
+            
+            // Ajouter les enfants de ce parent
+            if (isset($childrenByParent[$parentId])) {
+                foreach ($childrenByParent[$parentId] as $child) {
+                    if (!in_array($child->getId(), $processedChildren)) {
+                        $reorderedChildren[] = $child;
+                        $processedChildren[] = $child->getId();
+                    }
+                }
+            }
+            
+            // Si ce parent a un conjoint, ajouter aussi ses enfants
+            if (isset($coupleMap[$parentId])) {
+                $spouseId = $coupleMap[$parentId]->getId();
+                if (isset($childrenByParent[$spouseId])) {
+                    foreach ($childrenByParent[$spouseId] as $child) {
+                        if (!in_array($child->getId(), $processedChildren)) {
+                            $reorderedChildren[] = $child;
+                            $processedChildren[] = $child->getId();
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Ajouter les enfants orphelins (sans parents identifiés)
+        foreach ($children as $child) {
+            if (!in_array($child->getId(), $processedChildren)) {
+                $reorderedChildren[] = $child;
+            }
+        }
+        
+        // Remplacer l'ordre original des enfants
+        $children = $reorderedChildren;
+        
+        // Debug de l'ordre final des enfants
+        $finalNames = array_map(fn($p) => $p->getFirstName(), $children);
+        error_log("=== DEBUG TRI ENFANTS ===");
+        error_log("Ordre final des enfants: " . implode(', ', $finalNames));
+        error_log("=== FIN DEBUG TRI ENFANTS ===");
+    }
+
+    private function sortGenerationWithCouples(array &$peopleInGen, array $couples): void
+    {
+        // Debug pour voir ce qui se passe
+        error_log("=== DEBUG SORT COUPLES ===");
+        error_log("Génération avec " . count($peopleInGen) . " personnes");
+        error_log("Couples identifiés: " . count($couples));
+        
+        // Créer un mapping des couples pour un accès rapide
+        $coupleMap = [];
+        foreach ($couples as $couple) {
+            $coupleMap[$couple['person1']->getId()] = $couple['person2'];
+            $coupleMap[$couple['person2']->getId()] = $couple['person1'];
+            error_log("Couple: " . $couple['person1']->getFirstName() . " <-> " . $couple['person2']->getFirstName());
+        }
+        
+        // Identifier les parents d'enfants (ceux qui ont des enfants)
+        $parentsWithChildren = $this->identifyParentsWithChildren($peopleInGen);
+        error_log("Parents avec enfants: " . implode(', ', array_map(fn($p) => $p->getFirstName(), $parentsWithChildren)));
+        
+        // Réorganiser avec priorité : couples, puis parents d'enfants, puis fraterie
+        $reordered = [];
+        $processed = [];
+        
+        // Étape 1 : Ajouter d'abord les couples
+        foreach ($peopleInGen as $person) {
+            if (in_array($person->getId(), $processed)) {
+                continue;
+            }
+            
+            // Si cette personne a un conjoint, les ajouter ensemble
+            if (isset($coupleMap[$person->getId()])) {
+                $spouse = $coupleMap[$person->getId()];
+                if (!in_array($spouse->getId(), $processed)) {
+                    $reordered[] = $person;
+                    $reordered[] = $spouse;
+                    $processed[] = $person->getId();
+                    $processed[] = $spouse->getId();
+                    error_log("Ajouté couple: " . $person->getFirstName() . " + " . $spouse->getFirstName());
+                }
+            }
+        }
+        
+        // Étape 2 : Ajouter les parents d'enfants restants (sans conjoint ET non déjà traités)
+        foreach ($peopleInGen as $person) {
+            if (in_array($person->getId(), $processed)) {
+                continue;
+            }
+            
+            if (in_array($person, $parentsWithChildren)) {
+                $reordered[] = $person;
+                $processed[] = $person->getId();
+                error_log("Ajouté parent d'enfant: " . $person->getFirstName());
+            }
+        }
+        
+        // Étape 3 : Ajouter le reste (fraterie et autres)
+        foreach ($peopleInGen as $person) {
+            if (in_array($person->getId(), $processed)) {
+                continue;
+            }
+            
+            $reordered[] = $person;
+            $processed[] = $person->getId();
+            error_log("Ajouté autre: " . $person->getFirstName());
+        }
+        
+        error_log("Ordre final: " . implode(', ', array_map(fn($p) => $p->getFirstName(), $reordered)));
+        error_log("=== FIN DEBUG SORT COUPLES ===");
+        
+        $peopleInGen = $reordered;
+    }
+    
+    private function calculatePersonLevelWithCouples(Person $person, array $visited, array $couples): int
+    {
+        // Éviter les boucles infinies
+        if (in_array($person->getId(), $visited)) {
+            return 0;
+        }
+        
+        $visited[] = $person->getId();
+        
+        $maxParentLevel = -1;
+        
+        // Calculer le niveau basé sur les parents (anciens champs ET nouveaux liens)
+        $parents = $this->getAllParents($person);
+        foreach ($parents as $parent) {
+            $parentLevel = $this->calculatePersonLevelWithCouples($parent, $visited, $couples);
+            $maxParentLevel = max($maxParentLevel, $parentLevel);
+        }
+        
+        // Si pas de parents, niveau 0, sinon niveau parent + 1
+        return $maxParentLevel + 1;
+    }
+
     private function calculatePersonLevel(Person $person, array $visited): int
     {
         // Éviter les boucles infinies
@@ -194,19 +365,66 @@ class FamilyTreeService
     /**
      * Récupère tous les parents d'une personne (anciens champs + nouveaux liens)
      */
+    private function identifyCouples(array $people): array
+    {
+        $couples = [];
+        $processed = [];
+        
+        foreach ($people as $person) {
+            if (in_array($person->getId(), $processed)) {
+                continue;
+            }
+            
+            foreach ($person->getTousLesLiens() as $lien) {
+                $typeLien = $lien->getTypeLien();
+                if (in_array($typeLien->getNom(), ['Conjoint', 'Ex-conjoint', 'Compagnon', 'Séparé'])) {
+                    $spouse = $lien->getAutrePersonne($person);
+                    
+                    // Éviter les doublons et les couples avec soi-même
+                    if (!in_array($person->getId(), $processed) && 
+                        !in_array($spouse->getId(), $processed) && 
+                        $person->getId() !== $spouse->getId()) {
+                        $couples[] = [
+                            'person1' => $person,
+                            'person2' => $spouse,
+                            'type' => $typeLien->getNom()
+                        ];
+                        $processed[] = $person->getId();
+                        $processed[] = $spouse->getId();
+                    }
+                }
+            }
+        }
+        
+        return $couples;
+    }
+
+    private function identifyParentsWithChildren(array $people): array
+    {
+        $parentsWithChildren = [];
+        
+        foreach ($people as $person) {
+            // Vérifier si cette personne a des enfants
+            foreach ($person->getTousLesLiens() as $lien) {
+                $typeLien = $lien->getTypeLien();
+                if ($typeLien->isEstParental() && $lien->isActifADate()) {
+                    // Si la personne est personne1 dans le lien, alors c'est un parent
+                    if ($lien->getPersonne1() === $person) {
+                        $parentsWithChildren[] = $person;
+                        break; // Une fois qu'on sait que c'est un parent, pas besoin de continuer
+                    }
+                }
+            }
+        }
+        
+        return $parentsWithChildren;
+    }
+
     private function getAllParents(Person $person): array
     {
         $parents = [];
         
-        // Ajouter les parents via les anciens champs (pour compatibilité)
-        if ($person->getFather()) {
-            $parents[] = $person->getFather();
-        }
-        if ($person->getMother()) {
-            $parents[] = $person->getMother();
-        }
-        
-        // Ajouter les parents via les nouveaux liens
+        // Utiliser uniquement le nouveau système de liens
         foreach ($person->getTousLesLiens() as $lien) {
             $typeLien = $lien->getTypeLien();
             if ($typeLien->isEstParental() && $lien->isActifADate()) {
@@ -405,19 +623,22 @@ class FamilyTreeService
         
                  // Calculer le centre des parents
          $parentCenterX = array_sum(array_map(fn($p) => $p['centerX'], $parentPositions)) / count($parentPositions);
-         $parentBottomY = max(array_map(fn($p) => $p['y'] + $p['height'], $parentPositions)) + 15; // Ajouter 15px d'espacement
+         // Utiliser le bas des parents + espacement pour le râteau
+         $parentBottomY = max(array_map(fn($p) => $p['y'] + $p['height'], $parentPositions)) + 15;
          
          // Couleur unique pour cette famille
          $familyColor = '#' . substr(md5(json_encode(array_keys($family['parents']))), 0, 6);
          
          // Calculer la position du râteau des parents si il y en a un
          $rakeY = null;
+         $rakeX = null; // Position X du râteau
          
          // Ligne horizontale entre parents (si plusieurs)
          if (count($parentPositions) > 1) {
              $leftParent = min(array_map(fn($p) => $p['centerX'], $parentPositions));
              $rightParent = max(array_map(fn($p) => $p['centerX'], $parentPositions));
-             $rakeY = $parentBottomY + 25; // Augmenter l'espacement du râteau
+             $rakeY = $parentBottomY + 25; // Râteau 25px sous le bas des parents
+             $rakeX = ($leftParent + $rightParent) / 2; // Centre exact du râteau
             
             $paths[] = [
                 'type' => 'line',
@@ -451,13 +672,11 @@ class FamilyTreeService
                          // Un seul enfant
              $child = $childPositions[0];
              
-             // Si on a un râteau de parents, partir exactement du râteau, sinon 20px plus bas  
-             $startY = ($rakeY !== null) ? $rakeY : $parentBottomY + 20;
+             // Si on a un râteau de parents, partir 50px sous le râteau, sinon 20px plus bas  
+             $startY = ($rakeY !== null) ? $rakeY + 50 : $parentBottomY + 20;
              
-             // Pour la courbe vers enfant unique, utiliser aussi la position exacte du râteau si il existe
-             $curveStartX = (count($parentPositions) > 1) ? 
-                 (min(array_map(fn($p) => $p['centerX'], $parentPositions)) + max(array_map(fn($p) => $p['centerX'], $parentPositions))) / 2 : 
-                 $parentCenterX;
+             // Pour la courbe vers enfant unique, utiliser la position exacte du râteau si il existe
+             $curveStartX = ($rakeX !== null) ? $rakeX : $parentCenterX;
              
              $paths[] = [
                  'type' => 'path',
@@ -481,13 +700,11 @@ class FamilyTreeService
 
             
             // Ligne centrale courbée
-            // Si on a un râteau de parents, partir exactement du râteau, sinon 20px plus bas
-            $startY = ($rakeY !== null) ? $rakeY : $parentBottomY + 20;
+            // Si on a un râteau de parents, partir 50px sous le râteau, sinon 20px plus bas
+            $startY = ($rakeY !== null) ? $rakeY + 50 : $parentBottomY + 20;
             
-            // Pour la courbe, utiliser la position du centre du râteau des parents si il y en a un
-            $curveStartX = (count($parentPositions) > 1) ? 
-                (min(array_map(fn($p) => $p['centerX'], $parentPositions)) + max(array_map(fn($p) => $p['centerX'], $parentPositions))) / 2 : 
-                $parentCenterX;
+            // Pour la courbe, utiliser la position exacte du râteau des parents si il y en a un
+            $curveStartX = ($rakeX !== null) ? $rakeX : $parentCenterX;
             
             $paths[] = [
                 'type' => 'path',
@@ -784,16 +1001,11 @@ class FamilyTreeService
     }
     
     /**
-     * Récupère tous les enfants d'une personne (anciens champs + nouveaux liens)
+     * Récupère tous les enfants d'une personne (via le système de liens)
      */
     private function getAllChildren(Person $person): array
     {
         $children = [];
-        
-        // Enfants via les anciens champs
-        foreach ($person->getChildren() as $child) {
-            $children[] = $child;
-        }
         
         // Enfants via les nouveaux liens
         foreach ($person->getTousLesLiens() as $lien) {
@@ -923,9 +1135,13 @@ class FamilyTreeService
     {
         $orderedPeople = [];
         
+        // IMPORTANT : Respecter l'ordre des personnes dans chaque génération
+        // tel qu'il a été défini par organizeByGenerations() avec notre logique de tri
+        
         // Parcourir les générations dans l'ordre
         foreach ($generations as $level => $people) {
             // Pour chaque personne dans cette génération, ajouter ses données de position
+            // L'ordre des personnes dans $people respecte déjà notre logique de tri
             foreach ($people as $person) {
                 $personId = $person->getId();
                 if (isset($positionedPeople[$personId])) {
@@ -934,8 +1150,15 @@ class FamilyTreeService
             }
         }
         
-                 return $orderedPeople;
-     }
+        // Debug pour vérifier l'ordre final
+        error_log("=== DEBUG REORDER - ORDRE FINAL ===");
+        foreach ($orderedPeople as $personId => $personData) {
+            error_log("ID $personId: {$personData['person']['name']} (niveau {$personData['level']})");
+        }
+        error_log("=== FIN DEBUG REORDER ===");
+        
+        return $orderedPeople;
+    }
      
      /**
       * Calculer la priorité familiale basée sur les relations parent-enfant

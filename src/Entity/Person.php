@@ -48,17 +48,14 @@ class Person
     #[ORM\Column(name: 'biographie', type: 'text', nullable: true)]
     private ?string $biography = null;
 
-    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'childrenAsFather')]
-    #[ORM\JoinColumn(name: 'pere_id', referencedColumnName: 'id', nullable: true)]
-    #[Assert\Expression(
-        "this.getFather() == null or this.getMother() == null or this.getFather() != this.getMother()",
-        message: "Une personne ne peut pas être à la fois le père et la mère"
-    )]
-    private ?self $father = null;
+    // Anciens champs supprimés - remplacés par le système de liens
+    // #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'childrenAsFather')]
+    // #[ORM\JoinColumn(name: 'pere_id', referencedColumnName: 'id', nullable: true)]
+    // private ?self $father = null;
 
-    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'childrenAsMother')]
-    #[ORM\JoinColumn(name: 'mere_id', referencedColumnName: 'id', nullable: true)]
-    private ?self $mother = null;
+    // #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'childrenAsMother')]
+    // #[ORM\JoinColumn(name: 'mere_id', referencedColumnName: 'id', nullable: true)]
+    // private ?self $mother = null;
 
     #[ORM\Column(name: 'photo', length: 255, nullable: true)]
     private ?string $photo = null;
@@ -69,11 +66,12 @@ class Person
     #[ORM\Column(name: 'generation', type: 'integer', nullable: true)]
     private ?int $generation = null;
 
-    #[ORM\OneToMany(mappedBy: 'father', targetEntity: Person::class)]
-    private Collection $childrenAsFather;
+    // Anciennes collections supprimées - remplacées par le système de liens
+    // #[ORM\OneToMany(mappedBy: 'father', targetEntity: Person::class)]
+    // private Collection $childrenAsFather;
 
-    #[ORM\OneToMany(mappedBy: 'mother', targetEntity: Person::class)]
-    private Collection $childrenAsMother;
+    // #[ORM\OneToMany(mappedBy: 'mother', targetEntity: Person::class)]
+    // private Collection $childrenAsMother;
 
     #[ORM\OneToMany(mappedBy: 'personne1', targetEntity: Lien::class)]
     private Collection $liensCommePersonne1;
@@ -83,8 +81,9 @@ class Person
 
     public function __construct()
     {
-        $this->childrenAsFather = new ArrayCollection();
-        $this->childrenAsMother = new ArrayCollection();
+        // Anciennes collections supprimées
+        // $this->childrenAsFather = new ArrayCollection();
+        // $this->childrenAsMother = new ArrayCollection();
         $this->liensCommePersonne1 = new ArrayCollection();
         $this->liensCommePersonne2 = new ArrayCollection();
     }
@@ -182,27 +181,28 @@ class Person
         return $this;
     }
 
-    public function getFather(): ?self
-    {
-        return $this->father;
-    }
+    // Anciens getters/setters supprimés - remplacés par le système de liens
+    // public function getFather(): ?self
+    // {
+    //     return $this->father;
+    // }
 
-    public function setFather(?self $father): static
-    {
-        $this->father = $father;
-        return $this;
-    }
+    // public function setFather(?self $father): static
+    // {
+    //     $this->father = $father;
+    //     return $this;
+    // }
 
-    public function getMother(): ?self
-    {
-        return $this->mother;
-    }
+    // public function getMother(): ?self
+    // {
+    //     return $this->mother;
+    // }
 
-    public function setMother(?self $mother): static
-    {
-        $this->mother = $mother;
-        return $this;
-    }
+    // public function setMother(?self $mother): static
+    // {
+    //     $this->mother = $mother;
+    //     return $this;
+    // }
 
     public function getPhoto(): ?string
     {
@@ -246,15 +246,16 @@ class Person
         return $name;
     }
 
-    public function getChildren(): Collection
-    {
-        return new ArrayCollection(
-            array_merge(
-                $this->childrenAsFather->toArray(),
-                $this->childrenAsMother->toArray()
-            )
-        );
-    }
+    // Ancienne méthode supprimée - remplacée par le système de liens
+    // public function getChildren(): Collection
+    // {
+    //     return new ArrayCollection(
+    //         array_merge(
+    //             $this->childrenAsFather->toArray(),
+    //             $this->childrenAsMother->toArray()
+    //         )
+    //     );
+    // }
 
     /**
      * @return Collection<int, Lien>

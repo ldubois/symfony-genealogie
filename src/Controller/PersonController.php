@@ -30,25 +30,15 @@ class PersonController extends AbstractController
     #[Route('/arbre-complet', name: 'app_person_full_tree', methods: ['GET'])]
     public function fullTree(PersonRepository $personRepository, FamilyTreeService $familyTreeService): Response
     {
-        // Récupérer toutes les personnes triées par nom
-        $people = $personRepository->findAllOrderedByName();
+        // Récupérer toutes les personnes SANS tri préalable pour respecter l'ordre des générations
+        $people = $personRepository->findAll();
         
-        // Organiser par générations
+        // Organiser par générations avec notre logique de tri des couples
         $generations = $familyTreeService->organizeByGenerations($people);
         
-        // DEBUG : Afficher l'ordre des générations
-        error_log("=== DEBUG CONTRÔLEUR ===");
-        foreach ($generations as $level => $peopleInGen) {
-            $names = array_map(fn($p) => $p->getFirstName(), $peopleInGen);
-            error_log("Génération $level: " . implode(', ', $names));
-        }
+        // Ordre des générations maintenant respecté par le service
         
-        // DEBUG : Afficher les IDs des personnes dans chaque génération
-        error_log("=== DEBUG IDs PAR GÉNÉRATION ===");
-        foreach ($generations as $level => $peopleInGen) {
-            $idsAndNames = array_map(fn($p) => "ID {$p->getId()}: {$p->getFirstName()}", $peopleInGen);
-            error_log("Génération $level IDs: " . implode(', ', $idsAndNames));
-        }
+        // IDs des personnes maintenant cohérents avec l'ordre des générations
         
         // Obtenir les données complètes avec positions et connexions SVG
         $treeData = $familyTreeService->getConnectionData($generations);

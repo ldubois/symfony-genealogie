@@ -257,6 +257,54 @@ class FamilyTreeServiceTest extends TestCase
         $this->assertContains('Christine', $secondGenNames, 'Christine doit être dans la deuxième génération');
     }
 
+    public function testCouplesAreGroupedTogether(): void
+    {
+        $allPeople = array_values($this->people);
+        $generations = $this->familyTreeService->organizeByGenerations($allPeople);
+        
+        // Vérifier que les couples sont placés côte à côte dans chaque génération
+        
+        // Génération 0 (ancêtres) : Serge et Hélène doivent être côte à côte
+        $firstGen = $generations[0];
+        $firstGenNames = array_map(fn($p) => $p->getFirstName(), $firstGen);
+        
+        $sergeIndex = array_search('Serge', $firstGenNames);
+        $heleneIndex = array_search('Hélène', $firstGenNames);
+        
+        $this->assertNotFalse($sergeIndex, 'Serge doit être dans la génération 0');
+        $this->assertNotFalse($heleneIndex, 'Hélène doit être dans la génération 0');
+        
+        // Serge et Hélène doivent être côte à côte (différence d'index = 1)
+        $this->assertEquals(1, abs($sergeIndex - $heleneIndex), 
+            'Serge et Hélène doivent être côte à côte dans la génération 0');
+        
+        // Génération 1 (parents) : Isabelle et Pierre doivent être côte à côte
+        $secondGen = $generations[1];
+        $secondGenNames = array_map(fn($p) => $p->getFirstName(), $secondGen);
+        
+        $isabelleIndex = array_search('Isabelle', $secondGenNames);
+        $pierreIndex = array_search('Pierre', $secondGenNames);
+        
+        $this->assertNotFalse($isabelleIndex, 'Isabelle doit être dans la génération 1');
+        $this->assertNotFalse($pierreIndex, 'Pierre doit être dans la génération 1');
+        
+        // Isabelle et Pierre doivent être côte à côte (différence d'index = 1)
+        $this->assertEquals(1, abs($isabelleIndex - $pierreIndex), 
+            'Isabelle et Pierre doivent être côte à côte dans la génération 1');
+        
+        // Vérifier l'ordre exact attendu
+        $this->assertEquals('Serge', $firstGenNames[0], 'Serge doit être en première position');
+        $this->assertEquals('Hélène', $firstGenNames[1], 'Hélène doit être en deuxième position');
+        $this->assertEquals('Isabelle', $secondGenNames[0], 'Isabelle doit être en première position');
+        $this->assertEquals('Pierre', $secondGenNames[1], 'Pierre doit être en deuxième position');
+        
+        // Debug pour voir l'ordre exact
+        echo "\n=== ORDRE DES COUPLES ===\n";
+        echo "Génération 0: " . implode(', ', $firstGenNames) . "\n";
+        echo "Génération 1: " . implode(', ', $secondGenNames) . "\n";
+        echo "==========================\n";
+    }
+
     public function testParentChildRelationships(): void
     {
         $allPeople = array_values($this->people);

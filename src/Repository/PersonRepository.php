@@ -22,36 +22,37 @@ class PersonRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function findAncestors(Person $person, int $generations = 3)
-    {
-        $ancestors = [];
-        $currentPerson = $person;
-        
-        for ($i = 0; $i < $generations; $i++) {
-            if ($currentPerson->getFather()) {
-                $ancestors[] = $currentPerson->getFather();
-            }
-            if ($currentPerson->getMother()) {
-                $ancestors[] = $currentPerson->getMother();
-            }
-            if ($currentPerson->getFather()) {
-                $currentPerson = $currentPerson->getFather();
-            } elseif ($currentPerson->getMother()) {
-                $currentPerson = $currentPerson->getMother();
-            } else {
-                break;
-            }
-        }
-        
-        return $ancestors;
-    }
+    // Anciennes méthodes supprimées - remplacées par le système de liens
+    // public function findAncestors(Person $person, int $generations = 3)
+    // {
+    //     $ancestors = [];
+    //     $currentPerson = $person;
+    //     
+    //     for ($i = 0; $i < $generations; $i++) {
+    //         if ($currentPerson->getFather()) {
+    //             $ancestors[] = $currentPerson->getFather();
+    //         }
+    //         if ($currentPerson->getMother()) {
+    //             $ancestors[] = $currentPerson->getMother();
+    //         }
+    //         if ($currentPerson->getFather()) {
+    //             $currentPerson = $currentPerson->getFather();
+    //         } elseif ($currentPerson->getMother()) {
+    //             $currentPerson->getMother();
+    //         } else {
+    //             break;
+    //         }
+    //     }
+    //     
+    //     return $ancestors;
+    // }
 
-    public function findDescendants(Person $person, int $generations = 3)
-    {
-        $qb = $this->createQueryBuilder('p')
-            ->where('p.father = :person OR p.mother = :person')
-            ->setParameter('person', $person);
-            
-        return $qb->getQuery()->getResult();
-    }
+    // public function findDescendants(Person $person, int $generations = 3)
+    // {
+    //     $qb = $this->createQueryBuilder('p')
+    //         ->where('p.father = :person OR p.mother = :person')
+    //         ->setParameter('person', $person);
+    //         
+    //     return $qb->getQuery()->getResult();
+    // }
 } 

@@ -36,8 +36,35 @@ class PersonController extends AbstractController
         // Organiser par générations
         $generations = $familyTreeService->organizeByGenerations($people);
         
+        // DEBUG : Afficher l'ordre des générations
+        error_log("=== DEBUG CONTRÔLEUR ===");
+        foreach ($generations as $level => $peopleInGen) {
+            $names = array_map(fn($p) => $p->getFirstName(), $peopleInGen);
+            error_log("Génération $level: " . implode(', ', $names));
+        }
+        
+        // DEBUG : Afficher les IDs des personnes dans chaque génération
+        error_log("=== DEBUG IDs PAR GÉNÉRATION ===");
+        foreach ($generations as $level => $peopleInGen) {
+            $idsAndNames = array_map(fn($p) => "ID {$p->getId()}: {$p->getFirstName()}", $peopleInGen);
+            error_log("Génération $level IDs: " . implode(', ', $idsAndNames));
+        }
+        
         // Obtenir les données complètes avec positions et connexions SVG
         $treeData = $familyTreeService->getConnectionData($generations);
+        
+        // DEBUG : Afficher l'ordre des données de position
+        error_log("=== DEBUG DONNÉES POSITION ===");
+        foreach ($treeData['positionedPeople'] as $personId => $personData) {
+            error_log("ID $personId: {$personData['person']['name']} à x={$personData['x']}, y={$personData['y']}, niveau={$personData['level']}");
+        }
+        
+        // DEBUG : Afficher l'ordre des clés dans positionedPeople
+        error_log("=== DEBUG ORDRE DES CLÉS ===");
+        $keys = array_keys($treeData['positionedPeople']);
+        error_log("Clés dans positionedPeople: " . implode(', ', $keys));
+        
+        error_log("=== FIN DEBUG ===");
 
         return $this->render('person/full_tree.html.twig', [
             'treeData' => $treeData,

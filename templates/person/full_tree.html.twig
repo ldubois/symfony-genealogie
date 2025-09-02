@@ -1241,12 +1241,95 @@ document.addEventListener('DOMContentLoaded', function() {
     function positionPeople() {
         const dimensions = calculateTreeDimensions();
         
-        personNodes.forEach(node => {
-            const x = parseInt(node.dataset.x);
-            const y = parseInt(node.dataset.y);
-            node.style.left = (x + dimensions.offsetX) + 'px';
-            node.style.top = (y + dimensions.offsetY) + 'px';
+        // IMPORTANT : Respecter EXACTEMENT l'ordre des données PHP
+        // Les données sont déjà dans le bon ordre grâce à l'algorithme PHP
+        // Ne pas utiliser Object.entries() qui peut perturber l'ordre
+        const orderedPersonIds = [];
+        
+        // APPROCHE CORRIGÉE : Utiliser l'ordre exact des personnes calculé par PHP
+        // Les données sont déjà dans le bon ordre grâce à l'algorithme PHP
+        // Parcourir les données dans l'ordre exact où elles ont été envoyées
+        Object.keys(treeData.positionedPeople).forEach(personId => {
+            orderedPersonIds.push(personId);
         });
+        
+        // IMPORTANT : NE PAS TRIER ! Utiliser directement l'ordre reçu de PHP
+        // Le tri JavaScript perturbe l'ordre et place Eglantine/Capucine à la fin
+        // Les données PHP sont déjà dans le bon ordre familial
+        
+        // DEBUG : Afficher l'ordre final
+        console.log('=== ORDRE FINAL DES PERSONNES ===');
+        orderedPersonIds.forEach((personId, index) => {
+            const personData = treeData.positionedPeople[personId];
+            console.log(`${index}: ${personData.person.name} (niveau ${personData.level})`);
+        });
+        console.log('================================');
+        
+        console.log('=== DEBUG POSITIONNEMENT ===');
+        console.log('IDs des personnes dans l\'ordre PHP:', orderedPersonIds);
+        console.log('Données complètes PHP:', treeData.positionedPeople);
+        
+        // DEBUG DÉTAILLÉ : Position de chaque personne dans le tableau reçu
+        console.log('=== DEBUG POSITION DANS LE TABLEAU ===');
+        console.log('Clés reçues de PHP:', Object.keys(treeData.positionedPeople));
+        
+        // Afficher la position de chaque personne dans le tableau original
+        const keys = Object.keys(treeData.positionedPeople);
+        keys.forEach((personId, index) => {
+            const personData = treeData.positionedPeople[personId];
+            console.log(`Position ${index} dans le tableau: ID ${personId} = ${personData.person.name} (niveau ${personData.level})`);
+        });
+        
+        // DEBUG : Vérifier l'ordre des clés vs l'ordre trié
+        console.log('=== COMPARAISON ORDRES ===');
+        console.log('Ordre des clés originales:', keys);
+        console.log('Ordre après tri:', orderedPersonIds);
+        
+        // Vérifier si l'ordre a changé
+        const orderChanged = JSON.stringify(keys) !== JSON.stringify(orderedPersonIds);
+        console.log('L\'ordre a-t-il changé après le tri?', orderChanged);
+        
+        if (orderChanged) {
+            console.log('⚠️ ATTENTION: L\'ordre a été modifié par le tri JavaScript !');
+            console.log('Cela peut expliquer pourquoi Eglantine et Capucine sont mal positionnées.');
+        }
+        
+        // Afficher l'ordre des personnes par génération
+        const peopleByLevel = {};
+        orderedPersonIds.forEach(personId => {
+            const personData = treeData.positionedPeople[personId];
+            if (personData && personData.level !== undefined) {
+                if (!peopleByLevel[personData.level]) {
+                    peopleByLevel[personData.level] = [];
+                }
+                peopleByLevel[personData.level].push({
+                    id: personId,
+                    name: personData.person.name,
+                    x: personData.x,
+                    y: personData.y
+                });
+            }
+        });
+        
+        console.log('Personnes par niveau:', peopleByLevel);
+        
+        orderedPersonIds.forEach(personId => {
+            const personData = treeData.positionedPeople[personId];
+            const personNode = document.querySelector(`[data-person-id="${personId}"]`);
+            
+            if (personNode && personData) {
+                const x = parseInt(personData.x);
+                const y = parseInt(personData.y);
+                personNode.style.left = (x + dimensions.offsetX) + 'px';
+                personNode.style.top = (y + dimensions.offsetY) + 'px';
+                
+                console.log(`Positionné ${personData.person.name} (ID: ${personId}) à x=${x}, y=${y}`);
+            } else {
+                console.warn(`Personne non trouvée ou données manquantes pour ID: ${personId}`);
+            }
+        });
+        
+        console.log('=== FIN DEBUG POSITIONNEMENT ===');
     }
     
     // Initialisation

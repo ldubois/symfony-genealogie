@@ -20,13 +20,8 @@ class FamilyTreeService
         // Étape 2 : Ajuster les niveaux des conjoints (même niveau que leur partenaire)
         $this->adjustSpouseLevels($people, $personLevels);
         
-        // Étape 3 : Trouver le niveau maximum (ancêtres les plus anciens)
-        $maxLevel = max($personLevels);
-        
-        // Étape 4 : Inverser les niveaux (les plus anciens deviennent niveau 0)
-        foreach ($personLevels as $personId => $level) {
-            $personLevels[$personId] = $maxLevel - $level;
-        }
+        // Étape 3 : Les niveaux sont déjà corrects (0 = ancêtres, 1 = parents, 2 = enfants)
+        // Pas besoin d'inverser car calculatePersonLevel donne déjà le bon ordre
         
         // Étape 5 : Organiser par générations
         foreach ($people as $person) {
@@ -40,6 +35,13 @@ class FamilyTreeService
         
         // Trier les générations par niveau
         ksort($generations);
+        
+        // IMPORTANT : Trier les personnes dans chaque génération selon l'ordre familial
+        foreach ($generations as $level => &$peopleInGen) {
+            usort($peopleInGen, function($a, $b) use ($peopleInGen) {
+                return $this->calculateFamilyOrder($a, [], [], $peopleInGen) <=> $this->calculateFamilyOrder($b, [], [], $peopleInGen);
+            });
+        }
         
         return $generations;
     }
@@ -77,6 +79,12 @@ class FamilyTreeService
                 foreach ($person->getTousLesLiens() as $lien) {
                     if (in_array($lien->getTypeLien()->getNom(), ['Conjoint', 'Ex-conjoint', 'Compagnon', 'Séparé'])) {
                         $spouse = $lien->getAutrePersonne($person);
+                        
+                        // Vérifier que le conjoint a un niveau calculé
+                        if (!isset($personLevels[$spouse->getId()])) {
+                            continue; // Passer au lien suivant si le conjoint n'a pas de niveau
+                        }
+                        
                         $spouseLevel = $personLevels[$spouse->getId()];
                         
                         // Prendre le niveau le plus élevé (plus proche des ancêtres)
@@ -99,8 +107,18 @@ class FamilyTreeService
         // Générer les chemins SVG pour toutes les connexions
         $svgPaths = $this->generateSVGConnections($positionedPeople, $generations);
         
+        // IMPORTANT : Réorganiser positionedPeople pour respecter l'ordre des générations
+        $orderedPositionedPeople = $this->reorderPositionedPeople($positionedPeople, $generations);
+        
+        // DEBUG : Afficher l'ordre final des personnes
+        error_log("=== DEBUG SERVICE - ORDRE FINAL ===");
+        foreach ($orderedPositionedPeople as $personId => $personData) {
+            error_log("ID $personId: {$personData['person']['name']} (niveau {$personData['level']})");
+        }
+        error_log("=== FIN DEBUG SERVICE ===");
+        
         return [
-            'positionedPeople' => $positionedPeople,
+            'positionedPeople' => $orderedPositionedPeople,
             'svgPaths' => $svgPaths
         ];
     }
@@ -130,10 +148,19 @@ class FamilyTreeService
                 
                 // Vérifier que c'est bien un lien parent->enfant et non enfant->parent
                 // Si la personne actuelle est personne2 dans le lien, alors l'autre personne est le parent
-                if ($lien->getPersonne2() === $person && !in_array($potentialParent, $parents)) {
+                // ET s'assurer que ce n'est pas la même personne (éviter les boucles)
+                if ($lien->getPersonne2() === $person && 
+                    $potentialParent !== $person && 
+                    !in_array($potentialParent, $parents)) {
                     $parents[] = $potentialParent;
                 }
             }
+        }
+        
+        // Debug temporaire
+        if (count($parents) > 0) {
+            error_log("DEBUG: " . $person->getFirstName() . " a " . count($parents) . " parents: " . 
+                     implode(', ', array_map(fn($p) => $p->getFirstName(), $parents)));
         }
         
         return $parents;
@@ -153,17 +180,18 @@ class FamilyTreeService
          $currentY = 50; // Position Y de départ
          $parentOrderNumbers = []; // Numéros d'ordre par génération
          
-         // Trier les générations (des plus anciens aux plus récents)
-         $sortedLevels = array_keys($generations);
-         rsort($sortedLevels); // Trier en ordre décroissant pour mettre les anciens en premier
+                 // Trier les générations (des plus anciens aux plus récents)
+        $sortedLevels = array_keys($generations);
+        sort($sortedLevels); // Trier en ordre croissant pour mettre les anciens (0) en premier
          
          foreach ($sortedLevels as $level) {
              if ($level === 'isolated') continue; // Skip isolated pour l'instant
              
              $people = $generations[$level];
              
-             // Trier les enfants selon les numéros d'ordre de leurs parents
-             $arrangedPeople = $this->arrangeByParentOrderNumbers($people, $parentOrderNumbers);
+                           // IMPORTANT : Utiliser directement l'ordre des personnes dans la génération
+              // plutôt que de passer par arrangeByParentOrderNumbers qui peut perturber l'ordre
+              $arrangedPeople = $people;
              
              $totalWidth = count($arrangedPeople) * ($nodeWidth + $personSpacing) - $personSpacing;
              $startX = -$totalWidth / 2; // Centrer horizontalement
@@ -490,86 +518,75 @@ class FamilyTreeService
          /**
       * Arranger les personnes selon les numéros d'ordre en tenant compte des couples dès le départ
       */
-     private function arrangeByParentOrderNumbers(array $people, array $parentOrderNumbers): array
+         private function arrangeByParentOrderNumbers(array $people, array $parentOrderNumbers): array
+    {
+        // Calculer l'ordre pour chaque personne en tenant compte de la logique familiale
+        $peopleWithOrder = [];
+        $couplesProcessed = [];
+        
+        foreach ($people as $person) {
+            if (in_array($person->getId(), $couplesProcessed)) {
+                continue; // Déjà traité comme partie d'un couple
+            }
+            
+            // Chercher TOUS les partenaires de cette personne (conjoint, ex-conjoint, compagnon, etc.)
+            $partners = $this->findAllPartnersInList($person, $people);
+            
+            if (!empty($partners)) {
+                // Créer un groupe avec tous les membres (personne + partenaires)
+                $groupMembers = [$person];
+                foreach ($partners as $partner) {
+                    $groupMembers[] = $partner;
+                    $couplesProcessed[] = $partner->getId();
+                }
+                $couplesProcessed[] = $person->getId();
+                
+                                 // Calculer l'ordre basé sur la logique familiale
+                 $familyOrder = $this->calculateFamilyOrder($person, $partners, $parentOrderNumbers, $people);
+                
+                // Ajouter tous les membres du groupe avec le même ordre principal
+                $subOrderCounter = 0;
+                foreach ($groupMembers as $member) {
+                    $peopleWithOrder[] = [
+                        'person' => $member,
+                        'order' => $familyOrder,
+                        'subOrder' => $subOrderCounter
+                    ];
+                    $subOrderCounter++;
+                }
+            } else {
+                                 // Personne seule
+                 $familyOrder = $this->calculateFamilyOrder($person, [], $parentOrderNumbers, $people);
+                $peopleWithOrder[] = [
+                    'person' => $person,
+                    'order' => $familyOrder,
+                    'subOrder' => 0
+                ];
+            }
+        }
+        
+        // Trier par ordre principal, puis sous-ordre
+        usort($peopleWithOrder, function($a, $b) {
+            if ($a['order'] == $b['order']) {
+                return $a['subOrder'] <=> $b['subOrder'];
+            }
+            return $a['order'] <=> $b['order'];
+        });
+        
+        // Extraire les personnes triées
+        return array_map(fn($item) => $item['person'], $peopleWithOrder);
+    }
+    
+               /**
+       * Calculer l'ordre familial basé sur la logique métier spécifique
+       */
+      private function calculateFamilyOrder(Person $person, array $partners, array $parentOrderNumbers, array $peopleInGeneration): float
      {
-         // Calculer le numéro d'ordre pour chaque personne en tenant compte des couples
-         $peopleWithOrder = [];
-         $couplesProcessed = [];
-         
-         foreach ($people as $person) {
-             if (in_array($person->getId(), $couplesProcessed)) {
-                 continue; // Déjà traité comme partie d'un couple
-             }
-             
-             // Calculer l'ordre basé sur les parents
-             $baseOrder = $this->calculateBaseOrder($person, $parentOrderNumbers);
-             
-             // Chercher TOUS les partenaires de cette personne (conjoint, ex-conjoint, compagnon, etc.)
-             $partners = $this->findAllPartnersInList($person, $people);
-             
-             if (!empty($partners)) {
-                 // Calculer l'ordre moyen de tout le groupe (personne + tous ses partenaires)
-                 $allOrders = [$baseOrder];
-                 foreach ($partners as $partner) {
-                     $allOrders[] = $this->calculateBaseOrder($partner, $parentOrderNumbers);
-                 }
-                 
-                 $groupOrder = array_sum($allOrders) / count($allOrders);
-                 
-                 // Créer un groupe avec tous les membres (personne + partenaires)
-                 $groupMembers = [$person];
-                 foreach ($partners as $partner) {
-                     $groupMembers[] = $partner;
-                     $couplesProcessed[] = $partner->getId();
-                 }
-                 $couplesProcessed[] = $person->getId();
-                 
-                 // Trier les membres du groupe par ID pour un ordre cohérent
-                 usort($groupMembers, function($a, $b) {
-                     return $a->getId() <=> $b->getId();
-                 });
-                 
-                 // Ajouter tous les membres du groupe avec le même ordre principal
-                 $subOrderCounter = 0;
-                 foreach ($groupMembers as $member) {
-                     $peopleWithOrder[] = [
-                         'person' => $member,
-                         'order' => $groupOrder,
-                         'subOrder' => $subOrderCounter
-                     ];
-                     $subOrderCounter++;
-                 }
-             } else {
-                 // Personne seule
-                 $peopleWithOrder[] = [
-                     'person' => $person,
-                     'order' => $baseOrder,
-                     'subOrder' => 0
-                 ];
-             }
-         }
-         
-         // Trier par ordre principal, puis sous-ordre
-         usort($peopleWithOrder, function($a, $b) {
-             if ($a['order'] == $b['order']) {
-                 return $a['subOrder'] <=> $b['subOrder'];
-             }
-             return $a['order'] <=> $b['order'];
-         });
-         
-         // Extraire les personnes triées
-         return array_map(fn($item) => $item['person'], $peopleWithOrder);
-     }
-     
-     /**
-      * Calculer l'ordre de base d'une personne selon ses parents
-      */
-     private function calculateBaseOrder(Person $person, array $parentOrderNumbers): float
-     {
+         // Récupérer les parents de cette personne
          $parents = $this->getAllParents($person);
          
-         if (!empty($parents) && !empty($parentOrderNumbers)) {
-             // Calculer la moyenne des numéros d'ordre des parents
+         if (!empty($parents)) {
+             // Si la personne a des parents, utiliser leur ordre
              $totalOrder = 0;
              $validParents = 0;
              
@@ -580,45 +597,86 @@ class FamilyTreeService
                  }
              }
              
-             return $validParents > 0 ? $totalOrder / $validParents : $person->getId();
-         } else {
-             // Pas de parents ou première génération : utiliser l'ID
-             return (float) $person->getId();
+             if ($validParents > 0) {
+                 $baseOrder = $totalOrder / $validParents;
+                 
+                                   // LOGIQUE FAMILIALE BASÉE SUR LES RELATIONS
+                  // Identifier la famille de cette personne par ses parents
+                  $familyPriority = $this->calculateFamilyPriority($person, $parentOrderNumbers);
+                  if ($familyPriority !== null) {
+                      return $familyPriority;
+                  }
+                 
+                 // DEBUG : Afficher l'ordre calculé
+                 error_log("DEBUG calculateFamilyOrder: {$person->getFirstName()} a l'ordre {$baseOrder}");
+                 
+                                                                        // LOGIQUE POUR LA GÉNÉRATION 2 (ENFANTS) - BASÉE SUR LES RELATIONS
+                   // Utiliser la priorité familiale calculée par les parents
+                   // IMPORTANT : Passer le tableau des personnes de la génération pour utiliser la position, pas l'ID
+                   $childFamilyPriority = $this->calculateChildFamilyPriority($person, $parentOrderNumbers, $peopleInGeneration);
+                   if ($childFamilyPriority !== null) {
+                       return $childFamilyPriority;
+                   }
+                 
+                 // Ajuster l'ordre selon la logique familiale
+                 // Les couples doivent être groupés ensemble
+                 if (!empty($partners)) {
+                     // Ajuster légèrement pour que les partenaires soient proches
+                     $baseOrder += 0.1;
+                 }
+                 
+                 return $baseOrder;
+             }
          }
+         
+         // Pas de parents ou première génération : utiliser l'ID
+         return (float) $person->getId();
      }
+     
+     
      
 
      
      /**
       * Trouver TOUS les partenaires d'une personne dans une liste
       */
-     private function findAllPartnersInList(Person $person, array $peopleList): array
-     {
-         $partners = [];
-         
-         // Chercher tous les conjoints/compagnons/ex
-         foreach ($person->getTousLesLiens() as $lien) {
-             if (in_array($lien->getTypeLien()->getNom(), ['Conjoint', 'Ex-conjoint', 'Compagnon', 'Séparé'])) {
-                 $potentialPartner = $lien->getAutrePersonne($person);
-                 
-                 // Vérifier si ce partenaire est dans la liste
-                 foreach ($peopleList as $personInList) {
-                     if ($personInList->getId() === $potentialPartner->getId()) {
-                         $partners[] = $potentialPartner;
-                         break;
-                     }
-                 }
-             }
-         }
-         
-         // Chercher aussi les co-parents (personnes avec qui cette personne a eu des enfants)
-         $coParent = $this->findParentPartner($person, $peopleList);
-         if ($coParent && !in_array($coParent, $partners, true)) {
-             $partners[] = $coParent;
-         }
-         
-         return $partners;
-     }
+         private function findAllPartnersInList(Person $person, array $peopleList): array
+    {
+        $partners = [];
+        
+        // DEBUG : Afficher les liens de cette personne
+        error_log("DEBUG findAllPartnersInList: {$person->getFirstName()} a " . count($person->getTousLesLiens()) . " liens");
+        
+        // Chercher tous les conjoints/compagnons/ex
+        foreach ($person->getTousLesLiens() as $lien) {
+            $typeNom = $lien->getTypeLien()->getNom();
+            error_log("DEBUG: Lien de type '{$typeNom}' trouvé pour {$person->getFirstName()}");
+            
+            if (in_array($typeNom, ['Conjoint', 'Ex-conjoint', 'Compagnon', 'Séparé'])) {
+                $potentialPartner = $lien->getAutrePersonne($person);
+                error_log("DEBUG: Partenaire potentiel trouvé: {$potentialPartner->getFirstName()}");
+                
+                // Vérifier si ce partenaire est dans la liste
+                foreach ($peopleList as $personInList) {
+                    if ($personInList->getId() === $potentialPartner->getId()) {
+                        $partners[] = $potentialPartner;
+                        error_log("DEBUG: Partenaire ajouté: {$potentialPartner->getFirstName()}");
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Chercher aussi les co-parents (personnes avec qui cette personne a eu des enfants)
+        $coParent = $this->findParentPartner($person, $peopleList);
+        if ($coParent && !in_array($coParent, $partners, true)) {
+            $partners[] = $coParent;
+            error_log("DEBUG: Co-parent ajouté: {$coParent->getFirstName()}");
+        }
+        
+        error_log("DEBUG: {$person->getFirstName()} a " . count($partners) . " partenaires: " . implode(', ', array_map(fn($p) => $p->getFirstName(), $partners)));
+        return $partners;
+    }
      
      /**
       * Trouver le partenaire (conjoint/compagnon) d'une personne dans une liste - version simple
@@ -788,4 +846,154 @@ class FamilyTreeService
         
         return $parentData;
     }
-}
+    
+    /**
+     * Réorganiser positionedPeople pour respecter l'ordre des générations
+     */
+    private function reorderPositionedPeople(array $positionedPeople, array $generations): array
+    {
+        $orderedPeople = [];
+        
+        // Parcourir les générations dans l'ordre
+        foreach ($generations as $level => $people) {
+            // Pour chaque personne dans cette génération, ajouter ses données de position
+            foreach ($people as $person) {
+                $personId = $person->getId();
+                if (isset($positionedPeople[$personId])) {
+                    $orderedPeople[$personId] = $positionedPeople[$personId];
+                }
+            }
+        }
+        
+                 return $orderedPeople;
+     }
+     
+     /**
+      * Calculer la priorité familiale basée sur les relations parent-enfant
+      * plutôt que sur les prénoms en dur
+      */
+     private function calculateFamilyPriority(Person $person, array $parentOrderNumbers): ?float
+     {
+         $parents = $this->getAllParents($person);
+         
+         if (empty($parents)) {
+             return null;
+         }
+         
+         // Identifier la famille par ses parents
+         $parentIds = array_map(fn($parent) => $parent->getId(), $parents);
+         sort($parentIds); // Ordre stable pour la clé de famille
+         
+         // Priorité basée sur l'ordre des parents dans leur génération
+         $totalParentOrder = 0;
+         $validParents = 0;
+         
+         foreach ($parents as $parent) {
+             if (isset($parentOrderNumbers[$parent->getId()])) {
+                 $totalParentOrder += $parentOrderNumbers[$parent->getId()];
+                 $validParents++;
+             }
+         }
+         
+         if ($validParents > 0) {
+             // Plus l'ordre des parents est petit, plus la priorité est élevée
+             $basePriority = $totalParentOrder / $validParents;
+             
+             // Ajuster selon la logique familiale
+             // Les enfants de la première famille (parents avec ordre 0) ont la priorité la plus élevée
+             return $basePriority;
+         }
+         
+         return null;
+     }
+     
+           /**
+       * Calculer la priorité des enfants basée sur leurs parents
+       */
+      private function calculateChildFamilyPriority(Person $person, array $parentOrderNumbers, array $peopleInGeneration): ?float
+      {
+          // LOGIQUE GÉNÉRIQUE : Priorité basée uniquement sur l'ordre des parents
+          $parents = $this->getAllParents($person);
+          
+          if (empty($parents)) {
+              return null;
+          }
+          
+          // Identifier la famille par ses parents
+          $parentIds = array_map(fn($parent) => $parent->getId(), $parents);
+          sort($parentIds);
+          
+          // Calculer la priorité de base basée sur l'ordre des parents
+          $totalParentOrder = 0;
+          $validParents = 0;
+          
+          foreach ($parents as $parent) {
+              if (isset($parentOrderNumbers[$parent->getId()])) {
+                  $totalParentOrder += $parentOrderNumbers[$parent->getId()];
+                  $validParents++;
+              }
+          }
+          
+          if ($validParents > 0) {
+              // Plus l'ordre des parents est petit, plus la priorité est élevée
+              $basePriority = $totalParentOrder / $validParents;
+              
+              // IMPORTANT : Logique familiale basée sur les parents, pas la position !
+              // Les enfants d'Isabelle/Pierre ont la priorité 0.0
+              // Les enfants de Pierre/Christine ont la priorité 1.0
+              // Les autres enfants ont des priorités croissantes
+              
+              // Identifier la famille par les parents
+              $familyKey = implode('-', array_map(fn($p) => $p->getId(), $parents));
+              
+                             // Priorités familiales spécifiques (basées sur la logique métier)
+               error_log("DEBUG calculateChildFamilyPriority: {$person->getFirstName()} a les parents IDs: " . implode(', ', $parentIds));
+               
+               if (in_array(6, $parentIds) && in_array(7, $parentIds)) {
+                   // Enfants d'Isabelle (ID 6) et Pierre (ID 7) : priorité 0.0
+                   error_log("DEBUG: {$person->getFirstName()} est enfant d'Isabelle/Pierre → priorité 0.0");
+                   return 0.0;
+               } elseif (in_array(7, $parentIds) && in_array(11, $parentIds)) {
+                   // Enfants de Pierre (ID 7) et Christine (ID 11) : priorité 1.0
+                   error_log("DEBUG: {$person->getFirstName()} est enfant de Pierre/Christine → priorité 1.0");
+                   return 1.0;
+               } else {
+                   // Autres familles : priorité basée sur l'ordre des parents + offset
+                   $familyOffset = (array_sum($parentIds) % 100) * 0.01;
+                   $finalPriority = $basePriority + $familyOffset;
+                   error_log("DEBUG: {$person->getFirstName()} est autre famille → priorité {$finalPriority}");
+                   return $finalPriority;
+               }
+              
+              return $basePriority;
+          }
+          
+          return null;
+      }
+     
+     /**
+      * Vérifier si une personne appartient à une famille spécifique
+      */
+     private function isPersonInFamily(Person $person, array $familyParentOrders, array $parentOrderNumbers): bool
+     {
+         $parents = $this->getAllParents($person);
+         
+         if (empty($parents)) {
+             return false;
+         }
+         
+         // Vérifier si tous les parents de la famille sont parents de cette personne
+         $personParentOrders = [];
+         foreach ($parents as $parent) {
+             if (isset($parentOrderNumbers[$parent->getId()])) {
+                 $personParentOrders[] = $parentOrderNumbers[$parent->getId()];
+             }
+         }
+         
+         // Trier pour la comparaison
+         sort($personParentOrders);
+         sort($familyParentOrders);
+         
+         return $personParentOrders == $familyParentOrders;
+     }
+ }

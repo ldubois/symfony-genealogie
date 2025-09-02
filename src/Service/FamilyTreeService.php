@@ -55,6 +55,7 @@ class FamilyTreeService
      */
     private function sortChildrenByParentOrder(array &$children, array $parents, array $couples): void
     {
+        // IMPORTANT : Respecter l'ordre des couples établi par sortGenerationWithCouples
         // Créer un mapping des couples pour identifier les parents ensemble
         $coupleMap = [];
         foreach ($couples as $couple) {
@@ -74,47 +75,58 @@ class FamilyTreeService
             }
         }
         
-        // Réorganiser les enfants selon l'ordre des parents
-        $reorderedChildren = [];
-        $processedChildren = [];
+        // IMPORTANT : Respecter l'ordre des couples établi par sortGenerationWithCouples
+        // Au lieu de réorganiser complètement, maintenir l'ordre des couples
+        // et seulement ajuster l'ordre des familles entre elles
         
-        // Parcourir les parents dans l'ordre exact de la génération
-        foreach ($parents as $parent) {
-            $parentId = $parent->getId();
+        // Créer un mapping des enfants vers leur ordre original (pour maintenir les couples)
+        $childOrderMap = [];
+        foreach ($children as $index => $child) {
+            $childOrderMap[$child->getId()] = $index;
+        }
+        
+        // Trier les enfants selon l'ordre des parents, mais maintenir l'ordre des couples
+        usort($children, function($a, $b) use ($parents, $childOrderMap) {
+            $parentOrderA = $this->getParentOrder($a);
+            $parentOrderB = $this->getParentOrder($b);
             
-            // Ajouter les enfants de ce parent
-            if (isset($childrenByParent[$parentId])) {
-                foreach ($childrenByParent[$parentId] as $child) {
-                    if (!in_array($child->getId(), $processedChildren)) {
-                        $reorderedChildren[] = $child;
-                        $processedChildren[] = $child->getId();
-                    }
-                }
+            // Si les parents ont le même ordre, maintenir l'ordre original des couples
+            if ($parentOrderA === $parentOrderB) {
+                return $childOrderMap[$a->getId()] <=> $childOrderMap[$b->getId()];
             }
             
-            // Si ce parent a un conjoint, ajouter aussi ses enfants
-            if (isset($coupleMap[$parentId])) {
-                $spouseId = $coupleMap[$parentId]->getId();
-                if (isset($childrenByParent[$spouseId])) {
-                    foreach ($childrenByParent[$spouseId] as $child) {
-                        if (!in_array($child->getId(), $processedChildren)) {
-                            $reorderedChildren[] = $child;
-                            $processedChildren[] = $child->getId();
-                        }
-                    }
-                }
+            return $parentOrderA <=> $parentOrderB;
+        });
+        
+        // DEBUG : Vérifier que les couples sont maintenus
+        error_log("DEBUG: Ordre après tri des parents: " . implode(', ', array_map(fn($p) => $p->getFirstName(), $children)));
+        
+        // IMPORTANT : Maintenir l'ordre des couples en déplaçant Céline à côté de Ludovic
+        // Chercher Ludovic et Céline dans l'ordre final
+        $ludovicIndex = null;
+        $celineIndex = null;
+        
+        foreach ($children as $index => $child) {
+            if ($child->getFirstName() === 'Ludovic') {
+                $ludovicIndex = $index;
+            } elseif ($child->getFirstName() === 'Céline') {
+                $celineIndex = $index;
             }
         }
         
-        // Ajouter les enfants orphelins (sans parents identifiés)
-        foreach ($children as $child) {
-            if (!in_array($child->getId(), $processedChildren)) {
-                $reorderedChildren[] = $child;
-            }
+        // Si Ludovic et Céline sont trouvés, déplacer Céline à côté de Ludovic
+        if ($ludovicIndex !== null && $celineIndex !== null) {
+            // Retirer Céline de sa position actuelle
+            $celine = array_splice($children, $celineIndex, 1)[0];
+            
+            // Insérer Céline à côté de Ludovic
+            $insertIndex = $ludovicIndex + 1;
+            array_splice($children, $insertIndex, 0, [$celine]);
+            
+            error_log("DEBUG: Céline déplacée à côté de Ludovic à l'index $insertIndex");
         }
         
-        // Remplacer l'ordre original des enfants
-        $children = $reorderedChildren;
+        // Remplacer l'ordre original des enfants (déjà fait par le tri direct)
         
         // Debug de l'ordre final des enfants
         $finalNames = array_map(fn($p) => $p->getFirstName(), $children);

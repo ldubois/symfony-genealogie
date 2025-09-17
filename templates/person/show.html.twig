@@ -71,35 +71,28 @@
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Parents</h5>
-                    {% if person.father or person.mother %}
+                    {% set parents = person.parents %}
+                    {% if parents|length > 0 %}
                         <div class="row">
-                            {% if person.father %}
+                            {% for parent in parents %}
                                 <div class="col-md-6">
                                     <div class="card mb-3">
                                         <div class="card-body">
-                                            <h6 class="card-title">Père</h6>
-                                            <p class="card-text">{{ person.father.fullName }}</p>
-                                            <a href="{{ path('app_person_show', {'id': person.father.id}) }}" class="btn btn-sm btn-info">
+                                            <h6 class="card-title">
+                                                {% if parent.gender.value == 'homme' %}
+                                                    Père
+                                                {% else %}
+                                                    Mère
+                                                {% endif %}
+                                            </h6>
+                                            <p class="card-text">{{ parent.fullName }}</p>
+                                            <a href="{{ path('app_person_show', {'id': parent.id}) }}" class="btn btn-sm btn-info">
                                                 Voir les détails
                                             </a>
                                         </div>
                                     </div>
                                 </div>
-                            {% endif %}
-                            
-                            {% if person.mother %}
-                                <div class="col-md-6">
-                                    <div class="card mb-3">
-                                        <div class="card-body">
-                                            <h6 class="card-title">Mère</h6>
-                                            <p class="card-text">{{ person.mother.fullName }}</p>
-                                            <a href="{{ path('app_person_show', {'id': person.mother.id}) }}" class="btn btn-sm btn-info">
-                                                Voir les détails
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endif %}
+                            {% endfor %}
                         </div>
                     {% else %}
                         <p class="text-muted">Aucun parent enregistré</p>

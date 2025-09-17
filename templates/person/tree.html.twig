@@ -299,48 +299,29 @@
         </svg>
         
         <div class="tree">
-            {# Parents basés sur les champs father/mother de l'entité Person #}
-            {% if person.father or person.mother %}
+            {# Parents basés sur le système de liens #}
+            {% set parents = person.parents %}
+            {% if parents|length > 0 %}
                 <div class="tree-level" data-level="parents">
-
-                        {% if person.father %}
-                            <div class="person-card" data-person="father">
-                                {% if person.father.photo %}
-                                    <img src="{{ person.father.photo }}" alt="{{ person.father.fullName }}" class="person-photo">
-                                {% else %}
-                                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjY2NjYyI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MyLjY3IDAgNC44NCAyLjE3IDQuODQgNC44NCAwIDIuNjctMi4xNyA0Ljg0LTQuODQgNC44NC0yLjY3IDAtNC44NC0yLjE3LTQuODQtNC44NCAwLTIuNjcgMi4xNy00Ljg0IDQuODQtNC44NHptMCAxMmM0LjQyIDAgOC4xNy0yLjI4IDkuNTQtNS41NS0yLjY5LTMuMTktNi41My01LjA1LTEwLjg2LTUuMDUtNC4zMyAwLTguMTcgMS44Ni0xMC44NiA1LjA1IDEuMzcgMy4yNyA1LjEyIDUuNTUgOS41NCA1LjU1eiIvPjwvc3ZnPg==" alt="Photo par défaut" class="person-photo">
-                                {% endif %}
-                                <div class="person-name">{{ person.father.fullName }}</div>
-                                {% if person.father.birthDate %}
-                                    <div class="person-dates">
-                                        {{ person.father.birthDate|date('d/m/Y') }}
-                                        {% if person.father.deathDate %}
-                                            - {{ person.father.deathDate|date('d/m/Y') }}
-                                        {% endif %}
-                                    </div>
-                                {% endif %}
-                                <a href="{{ path('app_person_show', {'id': person.father.id}) }}" class="person-link">Voir les détails</a>
-                            </div>
-                        {% endif %}
-                        {% if person.mother %}
-                            <div class="person-card" data-person="mother">
-                                {% if person.mother.photo %}
-                                    <img src="{{ person.mother.photo }}" alt="{{ person.mother.fullName }}" class="person-photo">
-                                {% else %}
-                                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjY2NjYyI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MyLjY3IDAgNC44NCAyLjE3IDQuODQgNC44NCAwIDIuNjctMi4xNyA0Ljg0LTQuODQgNC44NC0yLjY3IDAtNC44NC0yLjE3LTQuODQtNC44NCAwLTIuNjcgMi4xNy00Ljg0IDQuODQtNC44NHptMCAxMmM0LjQyIDAgOC4xNy0yLjI4IDkuNTQtNS41NS0yLjY5LTMuMTktNi41My01LjA1LTEwLjg2LTUuMDUtNC4zMyAwLTguMTcgMS44Ni0xMC44NiA5LjA1IDEuMzcgMy4yNyA1LjEyIDUuNTUgOS41NCA1LjU1eiIvPjwvc3ZnPg==" alt="Photo par défaut" class="person-photo">
-                                {% endif %}
-                                <div class="person-name">{{ person.mother.fullName }}</div>
-                                {% if person.mother.birthDate %}
-                                    <div class="person-dates">
-                                        {{ person.mother.birthDate|date('d/m/Y') }}
-                                        {% if person.mother.deathDate %}
-                                            - {{ person.mother.deathDate|date('d/m/Y') }}
-                                        {% endif %}
-                                    </div>
-                                {% endif %}
-                                <a href="{{ path('app_person_show', {'id': person.mother.id}) }}" class="person-link">Voir les détails</a>
-                            </div>
-                        {% endif %}
+                    {% for parent in parents %}
+                        <div class="person-card" data-person="parent-{{ parent.id }}">
+                            {% if parent.photo %}
+                                <img src="{{ parent.photo }}" alt="{{ parent.fullName }}" class="person-photo">
+                            {% else %}
+                                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjY2NjYyI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MyLjY3IDAgNC44NCAyLjE3IDQuODQgNC44NCAwIDIuNjctMi4xNyA0Ljg0LTQuODQgNC44NC0yLjY3IDAtNC44NC0yLjE3LTQuODQtNC44NCAwLTIuNjcgMi4xNy00Ljg0IDQuODQtNC44NHptMCAxMmM0LjQyIDAgOC4xNy0yLjI4IDkuNTQtNS41NS0yLjY5LTMuMTktNi41My01LjA1LTEwLjg2LTUuMDUtNC4zMyAwLTguMTcgMS44Ni0xMC44NiA1LjA1IDEuMzcgMy4yNyA1LjEyIDUuNTUgOS41NCA1LjU1eiIvPjwvc3ZnPg==" alt="Photo par défaut" class="person-photo">
+                            {% endif %}
+                            <div class="person-name">{{ parent.fullName }}</div>
+                            {% if parent.birthDate %}
+                                <div class="person-dates">
+                                    {{ parent.birthDate|date('d/m/Y') }}
+                                    {% if parent.deathDate %}
+                                        - {{ parent.deathDate|date('d/m/Y') }}
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            <a href="{{ path('app_person_show', {'id': parent.id}) }}" class="person-link">Voir les détails</a>
+                        </div>
+                    {% endfor %}
                 </div>
             {% endif %}
 

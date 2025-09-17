@@ -355,15 +355,7 @@ class Person
     {
         $parents = new ArrayCollection();
         
-        // Ajouter les parents via les anciens champs (pour compatibilité)
-        if ($this->father) {
-            $parents->add($this->father);
-        }
-        if ($this->mother) {
-            $parents->add($this->mother);
-        }
-        
-        // Ajouter les parents via les nouveaux liens
+        // Ajouter les parents via les liens parentaux
         foreach ($this->getTousLesLiens() as $lien) {
             $typeLien = $lien->getTypeLien();
             if ($typeLien->isEstParental() && $lien->isActifADate()) {
@@ -385,24 +377,7 @@ class Person
     {
         $siblings = new ArrayCollection();
         
-        // Récupérer les enfants des mêmes parents (ancienne méthode)
-        if ($this->father) {
-            foreach ($this->father->getChildren() as $sibling) {
-                if ($sibling !== $this) {
-                    $siblings->add($sibling);
-                }
-            }
-        }
-        
-        if ($this->mother) {
-            foreach ($this->mother->getChildren() as $sibling) {
-                if ($sibling !== $this && !$siblings->contains($sibling)) {
-                    $siblings->add($sibling);
-                }
-            }
-        }
-        
-        // Récupérer les frères et sœurs via les nouveaux liens
+        // Récupérer les frères et sœurs via les liens parentaux
         foreach ($this->getParents() as $parent) {
             foreach ($parent->getEnfants() as $enfant) {
                 if ($enfant !== $this && !$siblings->contains($enfant)) {
@@ -422,12 +397,7 @@ class Person
     {
         $enfants = new ArrayCollection();
         
-        // Ajouter les enfants via les anciens champs (pour compatibilité)
-        foreach ($this->getChildren() as $child) {
-            $enfants->add($child);
-        }
-        
-        // Ajouter les enfants via les nouveaux liens
+        // Ajouter les enfants via les liens parentaux
         foreach ($this->getTousLesLiens() as $lien) {
             $typeLien = $lien->getTypeLien();
             if ($typeLien->isEstParental() && $lien->isActifADate()) {

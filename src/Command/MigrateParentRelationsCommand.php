@@ -52,51 +52,10 @@ class MigrateParentRelationsCommand extends Command
         foreach ($people as $person) {
             $io->text("Vérification de {$person->getFirstName()} {$person->getLastName()}...");
 
-            // Vérifier s'il y a un père
-            if ($person->getFather()) {
-                $io->text("  → Père trouvé : {$person->getFather()->getFirstName()} {$person->getFather()->getLastName()}");
-                
-                // Vérifier si le lien existe déjà
-                $existingLien = $this->checkExistingLien($person->getFather(), $person, $fatherType);
-                if (!$existingLien) {
-                    // Créer le lien père → enfant
-                    $lien = new Lien();
-                    $lien->setPersonne1($person->getFather());
-                    $lien->setPersonne2($person);
-                    $lien->setTypeLien($fatherType);
-                    $lien->setDateDebut(new \DateTime());
-                    // Le lien est actif indéfiniment (pas de date de fin)
-                    
-                    $this->entityManager->persist($lien);
-                    $migratedCount++;
-                    $io->text("    ✅ Lien père créé");
-                } else {
-                    $io->text("    ℹ️  Lien père déjà existant");
-                }
-            }
-
-            // Vérifier s'il y a une mère
-            if ($person->getMother()) {
-                $io->text("  → Mère trouvée : {$person->getMother()->getFirstName()} {$person->getMother()->getLastName()}");
-                
-                // Vérifier si le lien existe déjà
-                $existingLien = $this->checkExistingLien($person->getMother(), $person, $motherType);
-                if (!$existingLien) {
-                    // Créer le lien mère → enfant
-                    $lien = new Lien();
-                    $lien->setPersonne1($person->getMother());
-                    $lien->setPersonne2($person);
-                    $lien->setTypeLien($motherType);
-                    $lien->setDateDebut(new \DateTime());
-                    // Le lien est actif indéfiniment (pas de date de fin)
-                    
-                    $this->entityManager->persist($lien);
-                    $migratedCount++;
-                    $io->text("    ✅ Lien mère créé");
-                } else {
-                    $io->text("    ℹ️  Lien mère déjà existant");
-                }
-            }
+            // Note: Cette commande était utilisée pour migrer les anciennes relations father/mother
+            // vers le nouveau système de liens. Comme ces propriétés n'existent plus,
+            // cette commande n'a plus d'utilité et ne fait rien.
+            $io->text("  ℹ️  Migration non nécessaire - système de liens déjà en place");
         }
 
         $io->section('💾 Sauvegarde des changements...');

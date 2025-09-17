@@ -182,19 +182,11 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    {{ form_row(form.father, {
-                        'label': 'Père',
-                        'attr': {
-                            'class': 'form-select'
-                        }
-                    }) }}
-                    
-                    {{ form_row(form.mother, {
-                        'label': 'Mère',
-                        'attr': {
-                            'class': 'form-select'
-                        }
-                    }) }}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Les relations familiales sont maintenant gérées via le système de liens. 
+                        Utilisez la section "Gestion des liens familiaux" pour ajouter des relations parent-enfant.
+                    </div>
                     
                     <div class="mt-3">
                         <h6 class="text-muted">
